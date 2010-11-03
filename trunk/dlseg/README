@@ -1,0 +1,4 @@
+Copyright (C) Artyom Shalkhakov, 2010.
+
+This is a very resource-conscious implementation of doubly-linked lists in ATS.
+It is based on some code from Hongwei Xi.
