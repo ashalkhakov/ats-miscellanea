@@ -275,6 +275,10 @@ end
 
 implement dllst_v_of_zipper_v {a} {lh,lf,lt} {l,r} (pf) = let
   prval dllst_v_zip (pf1, pf_at, pf2) = pf
+  prval () = __assert () where {
+    // it's really tiring to thread such constraints everywhere
+    extern prfun __assert (): [lf <> null && lt <> null] void
+  }
 in
   dlseg_v_append (dlseg_v_of_rdlseg_v pf1, dlseg_v_some (pf_at, pf2))
 end
@@ -285,34 +289,27 @@ implement rdllst_v_of_zipper_v {a} {lh,lf,lt} {l,r} (pf) =
 (* ****** ****** *)
 
 // take the first node as the cursor
-implement{a} dlzipper_make_first {lh,lt} {n} (pf1 | ph, pf, pt) = let
+implement{a} dlzipper_make_first {lh,lt} {n} (pf1 | ph, f, pt) = let
   prval dlseg_v_some (pf_at, pf1) = pf1
 in
-  pf := ph;
+  f := ph;
   (dllst_v_zip (rdlseg_v_none (), pf_at, pf1) | ())
 end
 
 // take the last node as the cursor
-implement{a} dlzipper_make_last {lh,lt} {n} (pf1 | ph, pf, pt) = let
+implement{a} dlzipper_make_last {lh,lt} {n} (pf1 | ph, f, pt) = let
   prval rdlseg_v_some (pf1, pf_at) = pf1
 in
-  pf := pt;
+  f := pt;
   (dllst_v_zip (pf1, pf_at, dlseg_v_none ()) | ())
 end
 
-// returns the element under the cursor
-(*
-fun dlzipper_takeout {a:viewt@ype} {lh,lf,lt:addr} {l,r:nat}
-  ( pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
-  | ph: ptr lh, pf: ptr lf, pt: ptr lt
-  ):<> (a @ lf, a @ lf -<lin,prf> dllst_v_zipper (a, lh, lf, lt, l, r) | ptr lf)
-*)
-
-extern fun dlnode_takeout {a:vt0p} {l,prev,next:addr} (
+// shows how to take out an item from a node
+fun dlnode_takeout {a:vt0p} {l,prev,next:addr} .< >. (
   pf: dlnode (a, prev, next) @ l | p: ptr l
 ):<> [l1:addr] (
   a @ l1, a @ l1 -<lin,prf> dlnode (a, prev, next) @ l | ptr l1
-) (* = let
+) = let
   val pitm = &(p->itm)
   prval pfitm = view@ (p->itm)
 in #[.. | (
@@ -321,14 +318,22 @@ in #[.. | (
 | pitm
 )] end // end of [dlnode_takeout]
 
+// returns the element under the cursor
 implement{a} dlzipper_takeout {lf,lh,lt} {l,r}
-  (pf_z | ph, pf, pt) = let
-  prval dllst_v_zip (pf_l, pf_f, pf_r) = pf_z
-  val (pf_at, pf_c | p) = dlnode_takeout (pf_f | pf)
-in
-  #[.. |(pf_at, llam pf_at => dllst_v_zip (pf_l, pf_c pf_at, pf_r) | p)]
+  (pf | ph, p, pt) = let
+  prval dllst_v_zip (pf_l, pf, pf_r) = pf
+  val pitm = &(p->itm)
+  prval pfitm = view@ (p->itm)
+in #[.. | (
+    pfitm
+  , llam pfitm => let
+      prval () = view@ (p->itm) := pfitm
+    in
+      dllst_v_zip (pf_l, view@ (!p), pf_r)
+    end
+  | pitm
+  )]
 end // end of [dlzipper_takeout]
-*)
 
 fn{a:vt0p} dlseg_is_empty {lh,pr,lt:addr} {n:nat}
   (pf: !dlseg_v (a, lh, pr, null, lt, n) | ph: ptr lh, pt: ptr lt)
@@ -378,6 +383,9 @@ implement{a} dlzipper_move_right {lh,lf,lt} {l} {r}
   (pf1 | ph, pf, pt) = let
   prval dllst_v_zip (pf1, pf_at, dlseg_v_some (pf1_at, pf2)) = pf1
   val () = pf := pf->next
+  prval () = __assert () where {
+    extern prfun __assert (): [lh <> null && lf <> null] void
+  }
 in
   (dllst_v_zip (rdlseg_v_some (pf1, pf_at), pf1_at, pf2) | ())
 end
@@ -389,6 +397,9 @@ implement{a} dlzipper_move_left {lh,lf,lt} {l} {r} (
   ) = let
   prval dllst_v_zip (rdlseg_v_some (pf1, pf1_at), pf_at, pf2) = pf1
   val () = pf := pf->prev
+  prval () = __assert () where {
+    extern prfun __assert (): [lf <> null && lt <> null] void
+  }
 in
   (dllst_v_zip (pf1, pf1_at, dlseg_v_some (pf_at, pf2)) | ())
 end

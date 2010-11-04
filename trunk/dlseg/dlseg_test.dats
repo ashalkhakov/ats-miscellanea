@@ -1,24 +1,33 @@
+staload _ = "prelude/DATS/pointer.dats"
+
 staload "dlseg.sats"
 staload _ = "dlseg.dats"
 
-(*
-fun{a:viewt@ype} dllst_foreach_main
-  {v:view} {vt:viewtype} {n:nat} {lh,lt:addr} {f:eff} (
-    pf1: !dllst_v (a, lh, lt, n), pf2: !v
-  | ph: ptr lh, pt: ptr lt, f: (!v | &a, !vt) -<f> void, env: !vt
-  ):<f> void
-
-fun dllst_sum {lh,lt:addr} {n:nat} .<>.
-  (pf: !dllst_v (int, lh, lt, n) | ph: ptr lh, pt: ptr lt):<> int = let
-  var res with pf_res = 0
-  stavar l:addr
-  val pres: ptr l = &res
-  fun f (pf: !unit_v | s: &int, x: !unit_vt ()): void = () // !x := !x + s
-  prval pf_v = unit_v ()
-  val () = dllst_foreach_main<int> {unit_v} (pf, pf_v | ph, pt, f, ())
-  prval unit_v () = pf
+// sum dllst elements with a zipper
+// (mainly a demonstration/test to see how it works)
+fun dllst_sum {lh,lt:addr} {n:pos} .<>.
+  (pf: !dllst_v (int, lh, lt, n) | ph: ptr lh, pt: ptr lt)
+  :<> int = let
+  fun loop {lh,lf,lt:addr} {l,r:nat} .<r>. (
+      pf: dllst_v_zipper (int, lh, lf, lt, l, r)
+    | h: ptr lh, f: &ptr lf >> ptr lf', t: ptr lt, acc: int
+    ):<> #[lf':addr] (dllst_v_zipper (int, lh, lf', lt, l+r, 0) | int) =
+    if dlzipper_right_is_empty (pf | h, f, t) then (pf | acc)
+    else let
+      val (pf_at, pf_p | pi) = dlzipper_takeout (pf | h, f, t)
+      val acc = acc + !pi
+      val (pfz | ()) = dlzipper_move_right (pf_p pf_at | h, f, t)
+    in
+      loop (pfz | h, f, t, acc)
+    end // end of [loop]
+  // make a zipper and use it for iteration
+  var p: ptr?
+  val (pfz | ()) = dlzipper_make_first (pf | ph, p, pt)
+  val (pfz | res) = loop (pfz | ph, p, pt, 0)
+  prval () = pf := dllst_v_of_zipper_v pfz
 in
-end *)
+  res
+end
 
 implement main (argc, argv) = let
   var n1 with pf_n1 = @{prev= null, next= null, itm= 5}
@@ -34,6 +43,9 @@ implement main (argc, argv) = let
   val (pf | ()) = dllst_cons (pf, pf_n3 | ph, pt, pn3)
 
   var p1: ptr? and p2: ptr? and p3: ptr?
+  val () = printf ("the sum of elements is %d\n", @(sum)) where {
+    val sum = dllst_sum (pf | ph, pt)
+  }
 
   val (pf, pf3_at | ()) = dllst_uncons (pf | ph, pt, p3)
   val (pf, pf2_at | ()) = dllst_uncons (pf | ph, pt, p2)
