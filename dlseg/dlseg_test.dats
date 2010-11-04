@@ -6,7 +6,7 @@ fun{a:viewt@ype} dllst_foreach_main
   {v:view} {vt:viewtype} {n:nat} {lh,lt:addr} {f:eff} (
     pf1: !dllst_v (a, lh, lt, n), pf2: !v
   | ph: ptr lh, pt: ptr lt, f: (!v | &a, !vt) -<f> void, env: !vt
-  ):<f> void *)
+  ):<f> void
 
 fun dllst_sum {lh,lt:addr} {n:nat} .<>.
   (pf: !dllst_v (int, lh, lt, n) | ph: ptr lh, pt: ptr lt):<> int = let
@@ -18,7 +18,7 @@ fun dllst_sum {lh,lt:addr} {n:nat} .<>.
   val () = dllst_foreach_main<int> {unit_v} (pf, pf_v | ph, pt, f, ())
   prval unit_v () = pf
 in
-end
+end *)
 
 implement main (argc, argv) = let
   var n1 with pf_n1 = @{prev= null, next= null, itm= 5}
