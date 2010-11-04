@@ -280,7 +280,7 @@ dataview dllst_v_zipper
 // end of [dllst_v_zipper]
 
 prfun dllst_v_of_zipper_v {a:viewt@ype}
-  {lh,lf,lt:addr | lf <> null && lt <> null} {l,r:nat}
+  {lh,lf,lt:addr} {l,r:nat}
   (pf: dllst_v_zipper (a, lh, lf, lt, l, r))
   :<> dllst_v (a, lh, lt, l+r+1)
 // end of [dllst_v_of_zipper_v]
@@ -296,14 +296,14 @@ prfun rdllst_v_of_zipper_v {a:viewt@ype}
 // take the first node as the cursor
 fun{a:viewt@ype} dlzipper_make_first {lh,lt:addr} {n:pos}
   ( pf1: dllst_v (a, lh, lt, n)
-  | ph: ptr lh, pf: &ptr? >> ptr lh, pt: ptr lt
+  | ph: ptr lh, f: &ptr? >> ptr lh, pt: ptr lt
   ):<> (dllst_v_zipper (a, lh, lh, lt, 0, n-1) | void)
 // end of [dlzipper_make_first]
 
 // take the last node as the cursor
 fun{a:viewt@ype} dlzipper_make_last {lh,lt:addr} {n:pos}
   ( pf1: rdllst_v (a, lh, lt, n)
-  | ph: ptr lh, pf: &ptr? >> ptr lt, pt: ptr lt
+  | ph: ptr lh, f: &ptr? >> ptr lt, pt: ptr lt
   ):<> (dllst_v_zipper (a, lh, lt, lt, n-1, 0) | void)
 // end of [dlzipper_make_last]
 
@@ -311,7 +311,10 @@ fun{a:viewt@ype} dlzipper_make_last {lh,lt:addr} {n:pos}
 fun{a:viewt@ype} dlzipper_takeout {lh,lf,lt:addr} {l,r:nat} (
     pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
   | ph: ptr lh, pf: ptr lf, pt: ptr lt
-  ):<> [l1:addr] (a @ l1, a @ l1 -<lin,prf> dllst_v_zipper (a, lh, lf, lt, l, r) | ptr l1)
+  ):<> [l1:addr] (
+    a @ l1, a @ l1 -<lin,prf> dllst_v_zipper (a, lh, lf, lt, l, r)
+  | ptr l1
+  )
 // end of [dlzipper_takeout]
 
 // returns true if there is at least one element
@@ -332,7 +335,7 @@ fun{a:viewt@ype} dlzipper_right_is_empty {lh,lf,lt:addr} {l,r:nat}
 
 // move the cursor one node right
 fun{a:viewt@ype} dlzipper_move_right
-  {lh,lf,lt:addr | lh <> null && lf <> null} {l:nat} {r:pos}
+  {lh,lf,lt:addr} {l:nat} {r:pos}
   ( pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
   | ph: ptr lh, pf: &ptr lf >> ptr lf', pt: ptr lt)
   :<> #[lf':addr] (dllst_v_zipper (a, lh, lf', lt, l+1, r-1) | void)
@@ -340,7 +343,7 @@ fun{a:viewt@ype} dlzipper_move_right
 
 // move the cursor one node left
 fun{a:viewt@ype} dlzipper_move_left
-  {lh,lf,lt:addr | lf <> null && lt <> null} {l:pos} {r:nat} (
+  {lh,lf,lt:addr} {l:pos} {r:nat} (
     pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
   | ph: ptr lh, pf: &ptr lf >> ptr lf', pt: ptr lt
   ):<> #[lf':addr] (dllst_v_zipper (a, lh, lf', lt, l-1, r+1) | void)
@@ -348,7 +351,7 @@ fun{a:viewt@ype} dlzipper_move_left
 
 // insert before cursor
 fun{a:viewt@ype} dlzipper_cons
-  {lh,lf,lt,le:addr | lf <> null && le <> null} {l,r:nat} (
+  {lh,lf,lt,le:addr | le <> null} {l,r:nat} (
     pf1: dllst_v_zipper (a, lh, lf, lt, l, r),
     pf_at: dlnode a @ le
   | ph: &ptr lh >> ptr lh', pf: ptr lf, pt: ptr lt, e: ptr le
@@ -357,7 +360,7 @@ fun{a:viewt@ype} dlzipper_cons
 
 // insert after cursor
 fun{a:viewt@ype} dlzipper_snoc
-  {lh,lf,lt,le:addr | lf <> null && le <> null} {l,r:nat} (
+  {lh,lf,lt,le:addr | le <> null} {l,r:nat} (
     pf1: dllst_v_zipper (a, lh, lf, lt, l, r),
     pf_at: dlnode a @ le
   | ph: ptr lh, pf: ptr lf, pt: &ptr lt >> ptr lt', e: ptr le
