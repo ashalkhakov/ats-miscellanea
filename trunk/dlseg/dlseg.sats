@@ -63,7 +63,7 @@ dataview dlseg_v (
 , int  // length
 ) = (* front view for doubly-linked list segments *)
   | {i,j:addr} dlseg_v_none (a, i, j, i, j, 0)
-  | {i,i',j,k,k':addr | i <> null && k' <> null} {n:nat}
+  | {i,i',j,k,k':addr | i > null; k' > null} {n:nat}
       dlseg_v_some (a, i, i', k, k', n+1) of
         (dlnode (a, i', j) @ i, dlseg_v (a, j, i, k, k', n))
 // end of [dlseg_v]
@@ -79,7 +79,7 @@ dataview rdlseg_v (
 , int  // length
 ) = (* backwards view for doubly-linked list segments *)
   | {l, l': addr} rdlseg_v_none (a, l, l', l, l', 0)
-  | {n:nat} {f, p', k', l, p:addr | f <> null && l <> null}
+  | {n:nat} {f, p', k', l, p:addr | f > null; l > null}
       rdlseg_v_some (a, f, p', k', l, n+1) of
         (rdlseg_v (a, f, p', l, p, n), dlnode (a, p, k') @ l)
 // end of [rdlseg_v]
@@ -117,7 +117,7 @@ viewtypedef rdllst_vt (a:viewt@ype, l1:addr, l2:addr, n:int) =
  * onto the end of pf1
  *)
 prfun dlseg_v_append {a:viewt@ype} {n1,n2:nat}
-  {f1,f2,l1,l2,p,n:addr | l2 <> null} (
+  {f1,f2,l1,l2,p,n:addr | l2 > null} (
     pf1: dlseg_v (a, f1, p, f2, l1, n1)
   , pf2: dlseg_v (a, f2, l1, n, l2, n2)
   ):<> dlseg_v (a, f1, p, n, l2, n1+n2)
@@ -129,7 +129,7 @@ prfun dlseg_v_append {a:viewt@ype} {n1,n2:nat}
  * appends sa1 onto the beginning of sa2
  *)
 prfun rdlseg_v_append {a: viewt@ype} {n1,n2:nat}
-  {f1, f2, l1, l2, pL, nL:addr | f1 <> null} (
+  {f1, f2, l1, l2, pL, nL:addr | f1 > null} (
     sa1: rdlseg_v (a, f1, pL, f2, l1, n1)
   , sa2: rdlseg_v (a, f2, l1, nL, l2, n2)
   ):<> rdlseg_v (a, f1, pL, nL, l2, n1+n2)
@@ -155,6 +155,70 @@ prfun dlseg_v_of_rdlseg_v {a:viewt@ype} {i,i',j,j':addr} {n:nat}
 
 (* ****** ****** *)
 
+fun{a:viewt@ype} dlnode_takeout {l,prev,next:addr} (
+  pf: dlnode (a, prev, next) @ l | p: ptr l
+):<> [l1:addr] (
+  a @ l1
+, a @ l1 -<lin,prf> dlnode (a, prev, next) @ l
+| ptr l1
+) // end of [dlnode_takeout]
+
+(* ****** ****** *)
+
+fun{a:viewt@ype} dlseg_is_empty {lh,pr,lt:addr} {n:nat}
+  (pf: !dlseg_v (a, lh, pr, null, lt, n) | ph: ptr lh, pt: ptr lt)
+  :<> bool (n == 0) // end of [dlseg_is_empty]
+
+fun{a:viewt@ype} rdlseg_is_empty {lh,nx,lt:addr} {n:nat}
+  (pf: !rdlseg_v (a, lh, null, nx, lt, n) | ph: ptr lh, pt: ptr lt)
+  :<> bool (n == 0) // end of [rdlseg_is_empty]
+
+(* ****** ****** *)
+
+fun{a:viewt@ype} dlseg_takeout {lh,pr,lt:addr} {n:pos} (
+    pf: dlseg_v (a, lh, pr, null, lt, n)
+  | ph: ptr lh, pt: ptr lt
+  ):<> [l1:addr] (
+    a @ l1, a @ l1 -<lin,prf> dlseg_v (a, lh, pr, null, lt, n)
+  | ptr l1
+  ) // end of [dlseg_first_takeout]
+
+fun{a:viewt@ype} rdlseg_takeout {lh,nx,lt:addr} {n:pos} (
+    pf: rdlseg_v (a, lh, null, nx, lt, n)
+  | ph: ptr lh, pt: ptr lt
+  ):<> [l1:addr] (
+    a @ l1, a @ l1 -<lin,prf> rdlseg_v (a, lh, null, nx, lt, n)
+  | ptr l1
+  ) // end of [dlseg_first_takeout]
+
+(* ****** ****** *)
+
+// cons an element onto a dlseg
+fun{a:viewt@ype} dlseg_cons {n:nat} {pr',lh,pr,lt,e:addr | pr > null; e > null} (
+    pf: dlseg_v (a, lh, pr, null, lt, n)
+  , pf_pr: dlnode (a, pr', lh) @ pr
+  , pf_at: dlnode a @ e
+  | pr: ptr pr, ph: &ptr lh >> ptr e, pt: &ptr lt >> ptr lt', e: ptr e
+  ):<> #[lt':addr] (
+    dlseg_v (a, e, pr, null, lt', n+1)
+  , dlnode (a, pr', e) @ pr
+  | void
+  ) // end of [dlseg_cons]
+
+// cons an element onto a rdlseg
+fun{a:viewt@ype} rdlseg_cons {n:nat} {lh,nx,lt,nx',e:addr | nx > null; e > null} (
+    pf: rdlseg_v (a, lh, null, nx, lt, n)
+  , pf_nx: dlnode (a, lt, nx') @ nx
+  , pf_at: dlnode a @ e
+  | nx: ptr nx, ph: &ptr lh >> ptr lh', pt: &ptr lt >> ptr e, e: ptr e
+  ):<> #[lh':addr] (
+    rdlseg_v (a, lh', null, nx, e, n+1)
+  , dlnode (a, e, nx') @ nx
+  | void
+  ) // end of [rdlseg_cons]
+
+(* ****** ****** *)
+
 fun{a:viewt@ype} dllst_make_empty
   (ph: &ptr? >> ptr null, pt: &ptr? >> ptr null)
   :<> (dllst_v (a, null, null, 0) | void)
@@ -165,10 +229,6 @@ fun{a:viewt@ype} dllst_make_singleton {l:agz} (
   | ph: &ptr? >> ptr l, pt: &ptr? >> ptr t, pl: ptr l
   ):<> #[t:addr] (dllst_v (a, l, t, 1) | void)
 // end of [dllst_make_singleton]
-
-(* ****** ****** *)
-
-(* TODO: takeout *)
 
 (* ****** ****** *)
 
@@ -195,7 +255,7 @@ fun{a:viewt@ype} dllst_length {n:nat} {lh,lt:addr}
  * given a front view on a doubly-linked list and a free-standing node,
  * inserts it at the beginning (before first node)
  *)
-fun{a:viewt@ype} dllst_cons {n:nat} {lh,lt,e:addr | e <> null} (
+fun{a:viewt@ype} dllst_cons {n:nat} {lh,lt,e:addr | e > null} (
     pf: dllst_v (a, lh, lt, n), pf_at: dlnode a @ e
   | ph: &ptr lh >> ptr e, pt: &ptr lt >> ptr lt', e: ptr e
   ):<> #[lt':addr] (dllst_v (a, e, lt', n+1) | void)
@@ -219,7 +279,7 @@ fun{a:viewt@ype} dllst_uncons {n:pos} {lh,lt:addr} (
  * given an end view on a doubly-linked list and a free-standing node,
  * insert it at the end (after last node)
  *)
-fun{a:viewt@ype} dllst_snoc {n:nat} {lh,lt,e:addr | e <> null} (
+fun{a:viewt@ype} dllst_snoc {n:nat} {lh,lt,e:addr | e > null} (
     pf: rdllst_v (a, lh, lt, n), pf_at: dlnode a @ e
   | ph: &ptr lh >> ptr lh', pt: &ptr lt >> ptr e, e: ptr e
   ):<> #[lh':addr] (rdllst_v (a, lh', e, n+1) | void)
@@ -286,7 +346,7 @@ prfun dllst_v_of_zipper_v {a:viewt@ype}
 // end of [dllst_v_of_zipper_v]
 
 prfun rdllst_v_of_zipper_v {a:viewt@ype}
-  {lh,lf,lt:addr | lf <> null && lt <> null} {l,r:nat}
+  {lh,lf,lt:addr | lf > null; lt > null} {l,r:nat}
   (pf: dllst_v_zipper (a, lh, lf, lt, l, r))
   :<> rdllst_v (a, lh, lt, l+r+1)
 // end of [rdllst_v_of_zipper_v]
@@ -296,75 +356,75 @@ prfun rdllst_v_of_zipper_v {a:viewt@ype}
 // take the first node as the cursor
 fun{a:viewt@ype} dlzipper_make_first {lh,lt:addr} {n:pos}
   ( pf1: dllst_v (a, lh, lt, n)
-  | ph: ptr lh, f: &ptr? >> ptr lh, pt: ptr lt
+  | ph: ptr lh, pc: &ptr? >> ptr lh, pc: ptr lt
   ):<> (dllst_v_zipper (a, lh, lh, lt, 0, n-1) | void)
 // end of [dlzipper_make_first]
 
 // take the last node as the cursor
 fun{a:viewt@ype} dlzipper_make_last {lh,lt:addr} {n:pos}
   ( pf1: rdllst_v (a, lh, lt, n)
-  | ph: ptr lh, f: &ptr? >> ptr lt, pt: ptr lt
+  | ph: ptr lh, pc: &ptr? >> ptr lt, pt: ptr lt
   ):<> (dllst_v_zipper (a, lh, lt, lt, n-1, 0) | void)
 // end of [dlzipper_make_last]
 
 // returns the element under the cursor
-fun{a:viewt@ype} dlzipper_takeout {lh,lf,lt:addr} {l,r:nat} (
-    pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
-  | ph: ptr lh, pf: ptr lf, pt: ptr lt
+fun{a:viewt@ype} dlzipper_takeout {lh,lc,lt:addr} {l,r:nat} (
+    pf1: dllst_v_zipper (a, lh, lc, lt, l, r)
+  | ph: ptr lh, pc: ptr lc, pt: ptr lt
   ):<> [l1:addr] (
-    a @ l1, a @ l1 -<lin,prf> dllst_v_zipper (a, lh, lf, lt, l, r)
+    a @ l1, a @ l1 -<lin,prf> dllst_v_zipper (a, lh, lc, lt, l, r)
   | ptr l1
   )
 // end of [dlzipper_takeout]
 
 // returns true if there is at least one element
 // to the left of the cursor
-fun{a:viewt@ype} dlzipper_left_is_empty {lh,lf,lt:addr} {l,r:nat}
-  ( pf1: !dllst_v_zipper (a, lh, lf, lt, l, r)
-  | ph: ptr lh, pf: ptr lf, pt: ptr lt
+fun{a:viewt@ype} dlzipper_left_is_empty {lh,lc,lt:addr} {l,r:nat}
+  ( pf1: !dllst_v_zipper (a, lh, lc, lt, l, r)
+  | ph: ptr lh, pc: ptr lc, pt: ptr lt
   ):<> bool (l == 0)
 // end of [dlzipper_left_is_empty]
 
 // returns true if there is at least one element
 // to the right of the cursor
-fun{a:viewt@ype} dlzipper_right_is_empty {lh,lf,lt:addr} {l,r:nat}
-  ( pf1: !dllst_v_zipper (a, lh, lf, lt, l, r)
-  | ph: ptr lh, pf: ptr lf, pt: ptr lt
+fun{a:viewt@ype} dlzipper_right_is_empty {lh,lc,lt:addr} {l,r:nat}
+  ( pf1: !dllst_v_zipper (a, lh, lc, lt, l, r)
+  | ph: ptr lh, pc: ptr lc, pt: ptr lt
   ):<> bool (r == 0)
 // end of [dlzipper_right_is_empty]
 
 // move the cursor one node right
 fun{a:viewt@ype} dlzipper_move_right
-  {lh,lf,lt:addr} {l:nat} {r:pos}
-  ( pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
-  | ph: ptr lh, pf: &ptr lf >> ptr lf', pt: ptr lt)
-  :<> #[lf':addr] (dllst_v_zipper (a, lh, lf', lt, l+1, r-1) | void)
+  {lh,lc,lt:addr} {l:nat} {r:pos}
+  ( pf1: dllst_v_zipper (a, lh, lc, lt, l, r)
+  | ph: ptr lh, pc: &ptr lc >> ptr lc', pt: ptr lt)
+  :<> #[lc':addr] (dllst_v_zipper (a, lh, lc', lt, l+1, r-1) | void)
 // end of [dlzipper_move_right]
 
 // move the cursor one node left
 fun{a:viewt@ype} dlzipper_move_left
-  {lh,lf,lt:addr} {l:pos} {r:nat} (
-    pf1: dllst_v_zipper (a, lh, lf, lt, l, r)
-  | ph: ptr lh, pf: &ptr lf >> ptr lf', pt: ptr lt
-  ):<> #[lf':addr] (dllst_v_zipper (a, lh, lf', lt, l-1, r+1) | void)
+  {lh,lc,lt:addr} {l:pos} {r:nat} (
+    pf1: dllst_v_zipper (a, lh, lc, lt, l, r)
+  | ph: ptr lh, pc: &ptr lc >> ptr lc', pt: ptr lt
+  ):<> #[lc':addr] (dllst_v_zipper (a, lh, lc', lt, l-1, r+1) | void)
 // end of [dlzipper_move_left]
 
 // insert before cursor
 fun{a:viewt@ype} dlzipper_cons
-  {lh,lf,lt,le:addr | le <> null} {l,r:nat} (
-    pf1: dllst_v_zipper (a, lh, lf, lt, l, r),
+  {lh,lc,lt,le:addr | le > null} {l,r:nat} (
+    pf1: dllst_v_zipper (a, lh, lc, lt, l, r),
     pf_at: dlnode a @ le
-  | ph: &ptr lh >> ptr lh', pf: ptr lf, pt: ptr lt, e: ptr le
-  ):<> #[lh':addr] (dllst_v_zipper (a, lh', lf, lt, l+1, r) | void)
+  | ph: &ptr lh >> ptr lh', pc: ptr lc, pt: ptr lt, e: ptr le
+  ):<> #[lh':addr] (dllst_v_zipper (a, lh', lc, lt, l+1, r) | void)
 // end of [dlzipper_cons]
 
 // insert after cursor
 fun{a:viewt@ype} dlzipper_snoc
-  {lh,lf,lt,le:addr | le <> null} {l,r:nat} (
-    pf1: dllst_v_zipper (a, lh, lf, lt, l, r),
+  {lh,lc,lt,le:addr | le > null} {l,r:nat} (
+    pf1: dllst_v_zipper (a, lh, lc, lt, l, r),
     pf_at: dlnode a @ le
-  | ph: ptr lh, pf: ptr lf, pt: &ptr lt >> ptr lt', e: ptr le
-  ):<> #[lt':addr] (dllst_v_zipper (a, lh, lf, lt', l, r+1) | void)
+  | ph: ptr lh, pc: ptr lc, pt: &ptr lt >> ptr lt', e: ptr le
+  ):<> #[lt':addr] (dllst_v_zipper (a, lh, lc, lt', l, r+1) | void)
 // end of [dlzipper_snoc]
 
 (* ****** ****** *)

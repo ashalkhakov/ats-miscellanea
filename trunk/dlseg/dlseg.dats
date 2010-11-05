@@ -37,7 +37,7 @@ implement dlseg_v_append {a} {n1,n2} {f1,f2,l1,l2,p,n} (pf1, pf2) =
 
 implement rdlseg_v_append (sa1, sa2) = let
   prfun loop {a:vt0p} {n1,n2:nat}
-    {f1, f2, l1, l2, pL, nL:addr | f1 <> null} .<n2>. (
+    {f1, f2, l1, l2, pL, nL:addr | f1 > null} .<n2>. (
     sa1: rdlseg_v (a, f1, pL, f2, l1, n1)
   , sa2: rdlseg_v (a, f2, l1, nL, l2, n2)
   ):<> rdlseg_v (a, f1, pL, nL, l2, n1+n2) = case+ sa2 of
@@ -72,6 +72,63 @@ end
 
 (* ****** ****** *)
 
+implement{a:vt0p} dlnode_takeout {l,prev,next} (pf | p) = let
+  val pitm = &(p->itm)
+  prval pfitm = view@ (p->itm)
+in #[.. | (
+  pfitm
+, llam pfitm => let prval () = view@ (p->itm) := pfitm in view@ (!p) end
+| pitm
+)] end // end of [dlnode_takeout]
+
+(* ****** ****** *)
+
+implement{a} dlseg_is_empty {lh,pr,lt} {n} (pf | ph, pt) =
+  if ph = null then let
+    prval dlseg_v_none () = pf
+    prval () = pf := dlseg_v_none ()
+  in true end else let
+    prval dlseg_v_some (pf_at, pf1) = pf
+    prval () = pf := dlseg_v_some (pf_at, pf1)
+  in false end // end of [dlseg_is_empty]
+
+implement{a} rdlseg_is_empty {lh,nx,lt} {n} (pf | ph, pt) =
+  if pt = null then let
+    prval rdlseg_v_none () = pf
+    prval () = pf := rdlseg_v_none ()
+  in true end else let
+    prval rdlseg_v_some (pf1, pf_at) = pf
+    prval () = pf := rdlseg_v_some (pf1, pf_at)
+  in false end // end of [rdlseg_is_empty]
+
+(* ****** ****** *)
+
+implement{a} dlseg_takeout {lh,pr,lt} {n} (pf | p, pt) = let
+  prval dlseg_v_some (pf_nd, pf_rst) = pf
+  val pitm = &(p->itm)
+  prval pfitm = view@ (p->itm)
+in #[.. | (
+  pfitm
+, llam pfitm => let
+      prval () = view@ (p->itm) := pfitm
+    in dlseg_v_some (view@ (!p), pf_rst) end
+| pitm
+)] end // end of [dlseg_takeout]
+
+implement{a} rdlseg_takeout {lh,nx,lt} {n} (pf | ph, p) = let
+  prval rdlseg_v_some (pf_rst, pf_nd) = pf
+  val pitm = &(p->itm)
+  prval pfitm = view@ (p->itm)
+in #[.. | (
+  pfitm
+, llam pfitm => let
+      prval () = view@ (p->itm) := pfitm
+    in rdlseg_v_some (pf_rst, view@ (!p)) end
+| pitm
+)] end // end of [rdlseg_takeout]
+
+(* ****** ****** *)
+
 implement{a} dllst_make_empty (ph, pt) = begin
   ph := null;
   pt := null;
@@ -90,13 +147,7 @@ end
 (* ****** ****** *)
 
 implement{a} dllst_is_empty (pf | ph, pt) =
-  if ph = null then let
-    prval dlseg_v_none () = pf
-    prval () = pf := dlseg_v_none ()
-  in true end else let
-    prval dlseg_v_some (pf_at, pf1) = pf
-    prval () = pf := dlseg_v_some (pf_at, pf1)
-  in false end
+  dlseg_is_empty (pf | ph, pt)
 
 implement{a} dllst_isnot_empty (pf | ph, pt) =
   ~dllst_is_empty (pf | ph, pt)
@@ -119,6 +170,50 @@ implement{a} dllst_length {n}{lh,lt} (pf | ph, pt) = let
 in
   loop (pf | ph, null, null, pt, 0)
 end
+
+(* ****** ****** *)
+
+implement{a} dlseg_cons {n} {pr',lh,pr,lt,e} (pf, pf_pr, pf_at | pr, ph, pt, e) =
+  if ph = null then let
+    prval dlseg_v_none () = pf
+  in
+    e->next := null;
+    e->prev := pr;
+    pr->next := e;
+    ph := e;
+    pt := e;
+    (dlseg_v_some (pf_at, dlseg_v_none ()), pf_pr | ())
+  end else let
+    prval dlseg_v_some (pf1_at, pf2) = pf
+  in
+    e->next := ph;
+    e->prev := pr;
+    pr->next := e;
+    ph->prev := e;
+    ph := e;
+    (dlseg_v_some (pf_at, dlseg_v_some (pf1_at, pf2)), pf_pr | ())
+  end
+
+implement{a} rdlseg_cons {n} {lh,nx,lt,nx',e} (pf, pf_nx, pf_at | nx, ph, pt, e) =
+  if pt = null then let
+    prval rdlseg_v_none () = pf
+  in
+    e->next := nx;
+    e->prev := null;
+    nx->prev := e;
+    ph := e;
+    pt := e;
+    (rdlseg_v_some (rdlseg_v_none (), pf_at), pf_nx | ())
+  end else let
+    prval rdlseg_v_some (pf2, pf1_at) = pf
+  in
+    e->prev := pt;
+    e->next := nx;
+    nx->prev := e;
+    pt->next := e;
+    pt := e;
+    (rdlseg_v_some (rdlseg_v_some (pf2, pf1_at), pf_at), pf_nx | ())
+  end
 
 (* ****** ****** *)
 
@@ -273,34 +368,34 @@ end
 
 (* ****** ****** *)
 
-implement dllst_v_of_zipper_v {a} {lh,lf,lt} {l,r} (pf) = let
+implement dllst_v_of_zipper_v {a} {lh,lc,lt} {l,r} (pf) = let
   prval dllst_v_zip (pf1, pf_at, pf2) = pf
   prval () = __assert () where {
     // it's really tiring to thread such constraints everywhere
-    extern prfun __assert (): [lf <> null && lt <> null] void
+    extern prfun __assert (): [lc > null; lt > null] void
   }
 in
   dlseg_v_append (dlseg_v_of_rdlseg_v pf1, dlseg_v_some (pf_at, pf2))
 end
 
-implement rdllst_v_of_zipper_v {a} {lh,lf,lt} {l,r} (pf) =
+implement rdllst_v_of_zipper_v {a} {lh,lc,lt} {l,r} (pf) =
   rdlseg_v_of_dlseg_v (dllst_v_of_zipper_v pf)
 
 (* ****** ****** *)
 
 // take the first node as the cursor
-implement{a} dlzipper_make_first {lh,lt} {n} (pf1 | ph, f, pt) = let
+implement{a} dlzipper_make_first {lh,lt} {n} (pf1 | ph, pc, pt) = let
   prval dlseg_v_some (pf_at, pf1) = pf1
 in
-  f := ph;
+  pc := ph;
   (dllst_v_zip (rdlseg_v_none (), pf_at, pf1) | ())
 end
 
 // take the last node as the cursor
-implement{a} dlzipper_make_last {lh,lt} {n} (pf1 | ph, f, pt) = let
+implement{a} dlzipper_make_last {lh,lt} {n} (pf1 | ph, pc, pt) = let
   prval rdlseg_v_some (pf1, pf_at) = pf1
 in
-  f := pt;
+  pc := pt;
   (dllst_v_zip (pf1, pf_at, dlseg_v_none ()) | ())
 end
 
@@ -319,7 +414,7 @@ in #[.. | (
 )] end // end of [dlnode_takeout]
 
 // returns the element under the cursor
-implement{a} dlzipper_takeout {lf,lh,lt} {l,r}
+implement{a} dlzipper_takeout {lc,lh,lt} {l,r}
   (pf | ph, p, pt) = let
   prval dllst_v_zip (pf_l, pf, pf_r) = pf
   val pitm = &(p->itm)
@@ -335,34 +430,12 @@ in #[.. | (
   )]
 end // end of [dlzipper_takeout]
 
-fn{a:vt0p} dlseg_is_empty {lh,pr,lt:addr} {n:nat}
-  (pf: !dlseg_v (a, lh, pr, null, lt, n) | ph: ptr lh, pt: ptr lt)
-  :<> bool (n == 0) =
-    if ph = null then let
-      prval dlseg_v_none () = pf
-      prval () = pf := dlseg_v_none ()
-    in true end else let
-      prval dlseg_v_some (pf_at, pf1) = pf
-      prval () = pf := dlseg_v_some (pf_at, pf1)
-    in false end
-
-fn{a:vt0p} rdlseg_is_empty {lh,nx,lt:addr} {n:nat}
-  (pf: !rdlseg_v (a, lh, null, nx, lt, n) | ph: ptr lh, pt: ptr lt)
-  :<> bool (n == 0) =
-    if pt = null then let
-      prval rdlseg_v_none () = pf
-      prval () = pf := rdlseg_v_none ()
-    in true end else let
-      prval rdlseg_v_some (pf1, pf_at) = pf
-      prval () = pf := rdlseg_v_some (pf1, pf_at)
-    in false end
-
 // returns true if there is at least one element
 // to the left of the cursor
-implement{a} dlzipper_left_is_empty {lh,lf,lt} {l,r}
-  (pf1 | ph, pf, pt) = let
+implement{a} dlzipper_left_is_empty {lh,lc,lt} {l,r}
+  (pf1 | ph, pc, pt) = let
   prval dllst_v_zip (pf_l, pf_at, pf_r) = pf1
-  val b = rdlseg_is_empty (pf_l | ph, pf->prev)
+  val b = rdlseg_is_empty (pf_l | ph, pc->prev)
   prval () = pf1 := dllst_v_zip (pf_l, pf_at, pf_r)
 in
   b
@@ -370,35 +443,35 @@ end
 
 // returns true if there is at least one element
 // to the right of the cursor
-implement{a} dlzipper_right_is_empty {lh,lf,lt} {l,r} (pf1 | ph, pf, pt) = let
+implement{a} dlzipper_right_is_empty {lh,lc,lt} {l,r} (pf1 | ph, pc, pt) = let
   prval dllst_v_zip (pf_l, pf_at, pf_r) = pf1
-  val b = dlseg_is_empty (pf_r | pf->next, pt)
+  val b = dlseg_is_empty (pf_r | pc->next, pt)
   prval () = pf1 := dllst_v_zip (pf_l, pf_at, pf_r)
 in
   b
 end
 
 // move the cursor one node right
-implement{a} dlzipper_move_right {lh,lf,lt} {l} {r}
-  (pf1 | ph, pf, pt) = let
+implement{a} dlzipper_move_right {lh,lc,lt} {l} {r}
+  (pf1 | ph, pc, pt) = let
   prval dllst_v_zip (pf1, pf_at, dlseg_v_some (pf1_at, pf2)) = pf1
-  val () = pf := pf->next
+  val () = pc := pc->next
   prval () = __assert () where {
-    extern prfun __assert (): [lh <> null && lf <> null] void
+    extern prfun __assert (): [lh > null; lc > null] void
   }
 in
   (dllst_v_zip (rdlseg_v_some (pf1, pf_at), pf1_at, pf2) | ())
 end
 
 // move the cursor one node left
-implement{a} dlzipper_move_left {lh,lf,lt} {l} {r} (
+implement{a} dlzipper_move_left {lh,lc,lt} {l} {r} (
     pf1
-  | ph, pf, pt
+  | ph, pc, pt
   ) = let
   prval dllst_v_zip (rdlseg_v_some (pf1, pf1_at), pf_at, pf2) = pf1
-  val () = pf := pf->prev
+  val () = pc := pc->prev
   prval () = __assert () where {
-    extern prfun __assert (): [lf <> null && lt <> null] void
+    extern prfun __assert (): [lc > null; lt > null] void
   }
 in
   (dllst_v_zip (pf1, pf1_at, dlseg_v_some (pf_at, pf2)) | ())
@@ -407,24 +480,24 @@ end
 // insert before cursor
 implement{a} dlzipper_cons {lh,lf,lt,le} {l,r} (
     pf1, pf_at
-  | ph, pf, pt, e
+  | ph, pc, pt, e
   ) = let
   prval dllst_v_zip (pf_l, pf1_at, pf_r) = pf1
-  val pr = pf->prev
+  val pr = pc->prev
 in
   if pr = null then let
     prval rdlseg_v_none () = pf_l
     val () = e->prev := pr
-    val () = pf->prev := e
-    val () = e->next := pf
+    val () = pc->prev := e
+    val () = e->next := pc
     val () = ph := e
   in
     (dllst_v_zip (rdlseg_v_some (rdlseg_v_none (), pf_at), pf1_at, pf_r) | ())
   end else let
     prval rdlseg_v_some (pf_l, pf2_at) = pf_l
     val () = e->prev := pr
-    val () = pf->prev := e
-    val () = e->next := pf
+    val () = pc->prev := e
+    val () = e->next := pc
     val () = pr->next := e
   in
     (dllst_v_zip (rdlseg_v_some (rdlseg_v_some (pf_l, pf2_at), pf_at), pf1_at, pf_r) | ())
@@ -432,18 +505,18 @@ in
 end
 
 // insert after cursor
-implement{a} dlzipper_snoc {lh,lf,lt,le} {l,r} (
+implement{a} dlzipper_snoc {lh,lc,lt,le} {l,r} (
     pf1, pf_at
-  | ph, pf, pt, e
+  | ph, pc, pt, e
   ) = let
   prval dllst_v_zip (pf_l, pf1_at, pf_r) = pf1
-  val nx = pf->next
+  val nx = pc->next
 in
   if nx = null then let
     prval dlseg_v_none () = pf_r
     val () = e->next := nx
-    val () = pf->next := e
-    val () = e->prev := pf
+    val () = pc->next := e
+    val () = e->prev := pc
     val () = pt := e
   in
     (dllst_v_zip (pf_l, pf1_at,
@@ -451,8 +524,8 @@ in
   end else let
     prval dlseg_v_some (pf2_at, pf_r) = pf_r
     val () = e->next := nx
-    val () = pf->next := e
-    val () = e->prev := pf
+    val () = pc->next := e
+    val () = e->prev := pc
     val () = nx->prev := e
   in
     (dllst_v_zip (pf_l, pf1_at,
