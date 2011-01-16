@@ -1,0 +1,31 @@
+Below is a note that I wrote to myself on Jan 14, 2011 concerning the tracing of BVH.
+
+We define a sphere as a set of points in the equation |P-O| = R (where O is center of sphere, R is radius, P is a point). So a point P is on sphere iff the equation is satisfied.
+
+We define an axis-aligned bounding box AABB with two points A and B such that A <= B (where <= is component-wise less-than-or-equal-to relation on reals). We say that a point P is in a bounding box iff A <= P ^ P <= B.
+
+We say that a sphere S is enclosed by a bounding box BB iff |A-P| >= R and |B-P| >= R.
+
+We say that a box X is enclosed by another box Y iff A' >= A and B' <= B (where A' and B' are mins/maxs of X, and A, B are mins/maxs of Y).
+
+We define a ray as a set of points satisfying P = O + Dt where |D| = 1, t is scalar parameter. Thus a point is on a ray iff there is some [t] making an equation true. We will be mainly interested in cases when t >= 0.
+
+We say that a ray R pierces a bounding box B if there is at least one point on the surface of the bounding box that satisfies the ray equation. We defer the formalization to a later point; for now, it suffices to know that if a ray R intersects a bounding box B then have two parameters for entry and exit points of a ray, one referred to as tnear, another as tfar, respectively (-infinity <= tnear, tnear <= tfar, tfar <= infinity).
+
+Now, a BVH is defined as a tree with a leaf being a primitive (such as sphere) and a node containing two BVH trees, a bounding box enclosing both of them. We define a bounding box for a leaf the same as for the underlying primitive, and a bounding box for a node as that enclosing bounding boxes of all children of the node.
+
+The next is the goal of finding the nearest intersection of a ray with a BVH. In other words, we are to determine if there exists a point P on ray R that is also a point on one of the primitives of BVH, and then find the one P which has the minimal possible parameter for it, t. To put another way, there can be 0 or more intersections of BVH with a ray. Among the list of intersection parameters, we must pick the minimal one but non-negative (because for us, only the "forward" direction of a ray is important).
+
+We will go into some details about the base case, and then cover the inductive case.
+
+To find the nearest intersection with a leaf, we simply test against the primitive.
+
+To find the nearest intersection with a node, it suffices to find the nearest intersection with left child, then find the nearest intersection with a right child, and then determine the lesser of the two results.
+
+We have a ray R, a node N that has two children NL and NR and a bounding box B of N. We also know that R intersects the bounding box of the parent of N at two points, tnear and tfar (as discussed above). We proceed as follows.
+
+We see if ray hits the bounding box of a node. If not, there can be no intersection and we are done (this follows from the fact that bounding volumes tightly enclose geometry or subtree). If there is, then the two parameters for intersection are denoted tnear' and tfar' and we know that tnear <= tnear' and tfar' <= tfar (this follows from the fact that parents always enclose children in BVH).
+
+We recursively descend both children with tnear', tfar'. What is left is to choose the nearest intersection of zero (no child is hit), one (either left or right child is hit) or two (both children are hit).
+
+Here's a possible optimization: we know that left/right child, even if they are overlapping, can be classified against the splitting plane. If we encode that information, we could use the fact that children are ordered with respect to the split plane to our advantage. TODO: consult efficiency notes on RT (Boulous)

@@ -1,0 +1,46 @@
+This subdirectory contains a simple raytracer. The following goals
+were pursued for this project:
+
+* give the author a refresher on computer graphics, especially
+visualization by tracing rays ("to understand is to implement")
+
+* see if ATS is up to the task (in particular, I wanted to apply
+abstract data types, linear and dependent types, and other typeful
+programming facilities as present in ATS in the setting of computer
+graphics visualization)
+
+* design and implement a modular off-line raytracer; use sound
+principles gathered from many nice people [1] in writing a specification
+all the way down to writing the code against it
+
+Here are some results for the first version:
+
+* implemented a naive BVH that uses top-down in-place partitioning
+of input by median split along longest axis
+
+* many properties of the code that I find vital are formally verified
+by the ATS type system (e.g., correct use of resources). In particular,
+both linear and dependent types proved to be invaluable
+
+* the core of ray tracer (the implementation of BVH) was written in the
+time span of 1 working day and produced expected results the first time
+it was ran
+
+* modules and abstract types make it much easier to isolate parts of program,
+so that future modification is indeed less of a hassle; no breakage
+ensued when I changed the underlying implementations of abstract types
+(e.g., it wasn't an issue to supplant a naive O(n^2) implementation
+of scene with the BVH code)
+
+The following is a list of what I'd like to do next:
+
+* proper profiling and benchmarking
+
+* tracing of meshes
+
+* high-level optimization, then low-level optimization (one that takes
+into account the specifics of hardware that runs the program)
+
+--Artyom Shalkhakov on Jan 16, 2011
+
+[1] the authors of HtDP, SICP and others that I can't remember right now
