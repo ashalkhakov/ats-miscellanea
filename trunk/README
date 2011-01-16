@@ -1,1 +1,8 @@
-This folder contains packages I wrote that might be useful to the ATS community.
+This folder contains packages I wrote that might be useful to the ATS community. All code is licensed under LGPL v3.
+
+dlseg -- doubly-linked list segments
+hacks -- various small examples
+  arith.dats -- formalization of elementary arithmetic relations
+rtrace -- a simple ray tracer making heavy use of linear types
+
+--Artyom Shalkhakov, artyom DOT shalkhakov AT gmail DOT com
