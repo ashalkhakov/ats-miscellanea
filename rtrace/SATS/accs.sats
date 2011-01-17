@@ -27,22 +27,23 @@
 
 (* ****** ****** *)
 
-(* a simple BVH implementation *)
+(* an abstract datatype for an acceleration structure *)
 
 staload "SATS/geom.sats"
 
-absviewtype BVH (n:int)
+absviewtype accs_vt (n:int)
 
-// construct a BVH given a list of primitives
-fun bvh_initialize {n:pos} (p: &(@[sphere][n]), n: size_t n): BVH n
+// construct an acceleration
+// structure given a list of primitives
+fun accs_initialize {n:pos} (p: &(@[sphere][n]), n: size_t n): accs_vt n
 
-fun bvh_uninitialize {n:nat} (bvh: BVH n):<> void
+fun accs_uninitialize {n:nat} (acs: accs_vt n):<> void
 
-// perform a ray-BVH intersection test.
+// perform a ray-accs intersection test.
 // if the result is [true], then [t>=0] is the ray
 // parameter for the nearest intersection point
 // and [s] is the id of the primitive
-fun ray_bvh_test {n:pos} (
-    bvh: !BVH n, p: &(@[sphere][n])
+fun ray_accs_test {n:pos} (
+    acs: !accs_vt n, p: &(@[sphere][n])
   , r: ray, t: &float? >> opt (float, b), s: &size_t? >> opt (sizeLt n, b)
   ):<> #[b:bool] bool b

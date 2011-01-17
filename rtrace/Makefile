@@ -26,8 +26,8 @@
 ##
 
 CATSFILES=
-SATSFILES= SATS/vec.sats SATS/geom.sats SATS/scene.sats SATS/bvh.sats SATS/imbuf.sats
-DATSFILES= DATS/rtrace-simp.dats DATS/vec.dats DATS/geom.dats DATS/scene.dats DATS/bvh.dats DATS/imbuf.dats
+SATSFILES= SATS/vec.sats SATS/geom.sats SATS/scene.sats SATS/accs.sats SATS/imbuf.sats
+DATSFILES= DATS/rtrace-simp.dats DATS/vec.dats DATS/geom.dats DATS/scene.dats DATS/accs_bvh.dats DATS/imbuf.dats
 OFILES= $(patsubst %.dats,%_dats.o,$(DATSFILES)) $(patsubst %.sats,%_sats.o,$(SATSFILES))
 CFILES= $(patsubst %.dats,%_dats.o,$(DATSFILES)) $(patsubst %.sats,%_sats.c,$(SATSFILES))
 

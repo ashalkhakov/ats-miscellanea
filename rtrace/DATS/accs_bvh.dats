@@ -41,7 +41,7 @@ staload _ = "prelude/DATS/array.dats" // array_ptr_exch template
 
 staload "SATS/vec.sats"
 staload "SATS/geom.sats"
-staload "SATS/bvh.sats"
+staload "SATS/accs.sats"
 
 (* ****** ****** *)
 
@@ -79,7 +79,7 @@ dataviewtype bvh_vt (n:int, int) =
     )
 viewtypedef bvh0_vt (n:int) = [s:nat] bvh_vt (n, s)
 
-assume BVH (n:int) = bvh0_vt n
+assume accs_vt (n:int) = bvh0_vt n
 
 (*
 ** given a list of size [n], the total number
@@ -93,7 +93,7 @@ assume BVH (n:int) = bvh0_vt n
 (* ****** ****** *)
 (* construction and destruction *)
 
-implement bvh_initialize {n} (p, n) = let
+implement accs_initialize {n} (p, n) = let
   // compute bbox that encloses all primitives
   fun bbox_for_prim {k:nat} (
     id: &(@[sizeLt n][k])
@@ -337,7 +337,7 @@ end
 
 // will implement deallocation when [BVH]
 // is made into a viewtype
-implement bvh_uninitialize {n} (bvh) = let
+implement accs_uninitialize {n} (bvh) = let
   fun bvh_free {n,s:nat} .<s>. (bvh: bvh_vt (n, s)):<> void =
     case+ bvh of
     | ~bvh_vt_leaf _ => ()
@@ -398,7 +398,7 @@ fun ray_test {n,s:nat} .<s>. (
       end
     end // end of [ray_test]
 
-implement ray_bvh_test {n} (bvh, p, r, t, s) = let
+implement ray_accs_test {n} (bvh, p, r, t, s) = let
   val () = t := 16384.0f // something outside of scene (could be infinity)
   val () = s := size1_of_int1 0
   val res = ray_test (bvh, p, r, t, s, t, t)
