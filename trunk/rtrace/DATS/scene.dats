@@ -42,13 +42,13 @@ staload _ = "prelude/DATS/list_vt.dats" // [list_vt_length]
 staload "SATS/vec.sats"
 staload "SATS/geom.sats"
 staload "SATS/scene.sats"
-staload "SATS/bvh.sats"
+staload "SATS/accs.sats"
 
 (* ****** ****** *)
 
 staload _ = "DATS/vec.dats"
 staload _ = "DATS/geom.dats"
-staload _ = "DATS/bvh.dats"
+staload _ = "DATS/accs_bvh.dats"
 
 (* ****** ****** *)
 
@@ -65,7 +65,7 @@ viewtypedef SCENE_vt (
 , obj= ptr l
 , n_obj= size_t m
 , lgt= list_vt (light, n)
-, bvh= BVH m
+, accs= accs_vt m
 }
 
 viewtypedef SCENE0_vt = SCENE_vt (0, 0, null)?
@@ -81,20 +81,20 @@ implement mk_scene {m,n} (obj, lgt, sc) = () where {
   val n = size1_of_int1 (list_vt_length<sphere> (obj))
   val (pf_gc, pf_arr | p_arr) = array_ptr_alloc<sphere> (n)
   val () = array_ptr_initialize_lst_vt<sphere> (!p_arr, obj)
-  val bvh = bvh_initialize (!p_arr, n)
+  val accs = accs_initialize (!p_arr, n)
   prval () = sc.pf_obj := pf_arr
   prval () = sc.pf_gc := pf_gc
   val () = sc.obj := p_arr
   val () = sc.n_obj := n
   val () = sc.lgt := lgt
-  val () = sc.bvh := bvh
+  val () = sc.accs := accs
 }
 
 (* ****** ****** *)
 
 implement ds_scene {m,n} (sc) = () where {
   val () = array_ptr_free (sc.pf_gc, sc.pf_obj | sc.obj)
-  val () = bvh_uninitialize (sc.bvh)
+  val () = accs_uninitialize (sc.accs)
   val () = list_vt_free (sc.lgt)
   prval () = __assert (sc) where {
     extern prfun __assert (s: &SCENE0_vt >> scene0_vt):<> void
@@ -112,8 +112,8 @@ implement intersect_ray {n,m} (s, r, res) = let
 in
   // the nearest intersection of ray with scene
   // is the same as the nearest intersection of ray
-  // with the BVH of scene
-  if :(t: float?, i: size_t?) => ray_bvh_test (s.bvh, !p_arr, r, t, i) then let
+  // with the acceleration structure of scene
+  if :(t: float?, i: size_t?) => ray_accs_test (s.accs, !p_arr, r, t, i) then let
     prval () = opt_unsome {float} (t)
     prval () = opt_unsome {sizeLt n} (i)
     val () = res.t := t
