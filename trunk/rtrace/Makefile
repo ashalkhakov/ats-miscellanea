@@ -25,38 +25,71 @@
 ## Time: December 23, 2010
 ##
 
-CATSFILES=
-SATSFILES= SATS/vec.sats SATS/geom.sats SATS/scene.sats SATS/accs.sats SATS/imbuf.sats
-DATSFILES= DATS/rtrace-simp.dats DATS/vec.dats DATS/geom.dats DATS/scene.dats DATS/accs_bvh.dats DATS/imbuf.dats
-OFILES= $(patsubst %.dats,%_dats.o,$(DATSFILES)) $(patsubst %.sats,%_sats.o,$(SATSFILES))
-CFILES= $(patsubst %.dats,%_dats.o,$(DATSFILES)) $(patsubst %.sats,%_sats.c,$(SATSFILES))
+## - types of builds (what we want as a result?)
+##  - typecheck current module (don't compile)
+##  - make a debug, profiling or release build
+##   - indicated by a target
+##  - automake: too heavy (not much time for this)
+## - wishlist
+##  - put binaries into the bin subdirectory
+##  - put temporary files into a subdirectory
+##    - atscc strips subdirectories from input file names
+##    - don't know the magic to call atsopt+gcc myself
+##    - need different directories for different builds!
+##  - correctly clean up after building
+##
+## for now, we do a full rebuild each time,
+## this is recommended in the GCC documentation as to help
+## the compiler to produce more efficient binaries.
+## also, I'm lazy and rtrace is not so big.
 
+# input files
+_CATS=
+_SATS= vec geom scene accs imbuf
+_DATS= rtrace-simp vec geom scene accs_bvh imbuf
+_LIBS= m
+
+# compilers and flags
 CC= gcc
-CFLAGS= -Wall
-ATSFLAGS= -g
+debug : CFLAGS= -Wall
+release : CFLAGS= -O3
+LDFLAGS= $(patsubst %,-l%,$(_LIBS))
+typecheck: ATSFLAGS= -tc
+debug: ATSFLAGS= -g
+release: ATSFLAGS=
 ATSCC=atscc
+debug: ODIR=debug
+release: ODIR=release
+
+# ###### ###### #
+
+CFILES= $(patsubst %,%_dats.c,$(_DATS)) $(patsubst %,%_sats.c,$(_SATS))
+SATSFILES=$(patsubst %,SATS/%.sats,$(_SATS))
+DATSFILES=$(patsubst %,DATS/%.dats,$(_DATS))
 
 ####
 
-all: rtrace clean
+# silly (should have used automake for configuration),
+# but works
+debug: rtrace
+release: rtrace
+typecheck: rtrace
 
 ####
 
-rtrace: $(OFILES)
-	$(ATSCC) -o rtrace $(OFILES) -lm
-
-%_dats.o: %.dats
-	$(ATSCC) $(ATSFLAGS) -o $@ -c $<
-
-%_sats.o: %.sats
-	$(ATSCC) $(ATSFLAGS) -o $@ -c $<
+rtrace:
+	$(ATSCC) $(ATSFLAGS) -o rtrace $(DATSFILES) $(SATSFILES) $(CFLAGS) $(LDFLAGS)
 
 ####
 
 clean::
-	rm -f $(OFILES) $(CFILES)
+	rm -f $(CFILES)
 
 cleanall: clean
 	rm -f rtrace
+
+####
+
+.PHONY: rtrace
 
 ##### end of Makefile ####

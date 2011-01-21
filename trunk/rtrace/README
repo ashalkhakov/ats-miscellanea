@@ -1,5 +1,15 @@
-This subdirectory contains a simple raytracer. The following goals
-were pursued for this project:
+This subdirectory contains a simple raytracer.
+
+Outline:
+1. Goals
+2. Results
+3. Wishlist
+4. Building
+5. Contact
+
+=== 1. Goals ===
+
+The following goals were pursued for this project:
 
 * give the author a refresher on computer graphics, especially
 visualization by tracing rays ("to understand is to implement")
@@ -12,6 +22,8 @@ graphics visualization)
 * design and implement a modular off-line raytracer; use sound
 principles gathered from many nice people [1] in writing a specification
 all the way down to writing the code against it
+
+=== 2. Results ===
 
 Here are some results for the first version:
 
@@ -32,6 +44,8 @@ ensued when I changed the underlying implementations of abstract types
 (e.g., it wasn't an issue to supplant a naive O(n^2) implementation
 of scene with the BVH code)
 
+=== 3. Wishlist ===
+
 The following is a list of what I'd like to do next:
 
 * proper profiling and benchmarking
@@ -41,6 +55,18 @@ The following is a list of what I'd like to do next:
 * high-level optimization, then low-level optimization (one that takes
 into account the specifics of hardware that runs the program)
 
---Artyom Shalkhakov on Jan 16, 2011
+=== 4. Building ===
+
+Issue "make release" in the current directory for a release build.
+Alternatively, specifying the following targets gives, respectively:
+- debug: debug build
+- typecheck: typechecking only
+
+This code was tested and found to work on ATS/Anairiats-0.2.3
+and GCC 4.4.5 under Ubuntu 10.10.
+
+=== 5. Contact ===
+
+Artyom Shalkhakov (artyom DOT shalkhakov AT gmail DOT com)
 
 [1] the authors of HtDP, SICP and others that I can't remember right now
