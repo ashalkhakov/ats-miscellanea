@@ -50,6 +50,12 @@ staload _ = "DATS/vec.dats"
 
 (* ****** ****** *)
 
+// returns true iff point is in front of plane
+implement pln_point_infront (pl, p) =
+  vec3_get_elt_at__intsz (p, pl.ax) - pl.dist > 1e-4f
+
+(* ****** ****** *)
+
 assume ray = @{o= vec3, d= vec3}
 
 // pre: magnitude of [d] = 1
@@ -155,6 +161,23 @@ in
 end
 
 implement sphere_normal_at (s, p) = vec_norm (p - s.o)
+
+implement bbox_of_sphere (s) = let
+  val r = sphere_radius s
+  val min = vec_make (~r, ~r, ~r)
+  val max = vec_make (r, r, r)
+in
+  bbox_make (min, max)
+end // end of [bbox_of_sphere]
+
+implement pln_sphere_infront (p, s) = let
+   // find distance from center of [s] to [p]
+   val c = vec3_get_elt_at__intsz (sphere_origin s, p.ax) - p.dist
+   val r = sphere_radius s
+in
+   // compare distance against radius
+   c - r >= 1e-4f
+end // end of [pln_sphere_infront]
 
 (* ****** ****** *)
 
