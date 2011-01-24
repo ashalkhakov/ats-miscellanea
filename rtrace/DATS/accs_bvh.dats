@@ -53,16 +53,15 @@ staload _ = "DATS/geom.dats"
 #define ATS_DYNLOADFLAG 0
 
 (* ****** ****** *)
+(* all the assumptions about primitives we make
+** are listed here
+*)
 
-// axis-aligned plane
-// ax= 0 <-> dir= (1, 0, 0)
-// ax= 1 <-> dir= (0, 1, 0)
-// ax= 2 <-> dir= (0, 0, 1)
-typedef pln = @{ax= axis3, dist= float}
+typedef prim = sphere
 
-// returns true iff point is in front of plane
-fn pln_point_infront (pl: pln, p: vec3):<> bool =
-  vec3_get_elt_at__intsz (p, pl.ax) - pl.dist > 1e-4f
+#define bbox_of bbox_of_sphere
+#define pln_prim_infront pln_sphere_infront
+#define ray_prim_test ray_sphere_test
 
 (* ****** ****** *)
 (* a concrete representation for BVH *)
@@ -98,23 +97,15 @@ implement accs_initialize {n} (p, n) = let
   fun bbox_for_prim {k:nat} (
     id: &(@[sizeLt n][k])
   , isz: size_t k
-  , prim: &(@[sphere][n])
+  , prim: &(@[prim][n])
   ): bbox = let
-    fn bbox_of_sphere (s: sphere):<> bbox = let
-      val r = sphere_radius s
-      val min = vec_make (~r, ~r, ~r)
-      val max = vec_make (r, r, r)
-    in
-      bbox_make (min, max)
-    end // end of [bbox_of_sphere]
-
     fun loop {k:nat} {i:nat | i <= k} (
         id: &(@[sizeLt n][k]), isz: size_t k
       , i: size_t i
-      , prim: &(@[sphere][n])
+      , prim: &(@[prim][n])
       , mn: &vec3, mx: &vec3
       ): void = if i < isz then let
-        val b = bbox_of_sphere (prim.[id.[i]])
+        val b = bbox_of (prim.[id.[i]])
         val () = mn := min (mn, bbox_min b)
         val () = mx := max (mx, bbox_max b)
       in
@@ -139,57 +130,48 @@ implement accs_initialize {n} (p, n) = let
     pf_id: array_v (sizeLt n, k, l)
   | p_id: ptr l
   , isz: size_t k
-  , prim: &(@[sphere][n])
+  , prim: &(@[prim][n])
   , pl: pln
   ):<> [i:nat | i < k] [ofs:nat] (
     MUL (i, sizeof size_t, ofs)
   , array_v (sizeLt n, i, l), array_v (sizeLt n, k-i, l+ofs)
   | size_t i, ptr (l+ofs)
   ) = let
-    // returns true iff [s] is in front of [p]
-    fn prim_plane_classify (s: sphere, p: pln):<> bool = let
-      // find distance from center of [s] to [p]
-      val c = vec3_get_elt_at__intsz (sphere_origin s, p.ax) - p.dist
-      val r = sphere_radius s
-    in
-      // compare distance against radius
-      c - r >= 1e-4f
-    end // end of [prim_plane_classify]
-
     // when [loop] terminates, the resulting [r] tells us:
     // 0..r are elements to the back of [pl]
     // r..k are elements in front of [pl]
     fun loop {j:nat | j < k} {i:nat | i <= j} .<j-i>. (
         pf_id: !array_v (sizeLt n, k, l)
       | p_id: ptr l, isz: size_t k
-      , prim: &(@[sphere][n])
+      , prim: &(@[prim][n])
       , i: size_t i, j: size_t j
       , pl: pln
       ):<> sizeLt k = let
-        #define gte prim_plane_classify
+        #define gte pln_prim_infront
         fun l2r {i':nat | i <= i'; i' <= j} .<j-i'>. (
             pf_id: !array_v (sizeLt n, k, l)
-          | p_id: ptr l, prim: &(@[sphere][n]), pl: pln, i': size_t i', j: size_t j
+          | p_id: ptr l, prim: &(@[prim][n]), pl: pln, i': size_t i', j: size_t j
           ):<> [r:int | i' <= r; r <= j] size_t r =
           if i' < j then
-            if gte (prim.[!p_id.[i']], pl) then i'
+            if gte (pl, prim.[!p_id.[i']]) then i'
             else l2r (pf_id | p_id, prim, pl, succ i', j)
           else i' // end of [l2r]
         val [i':int] i' = l2r (pf_id | p_id, prim, pl, i, j)
         fun r2l {j':nat | i' <= j'; j' <= j} .<j'-i'>. (
             pf_id: !array_v (sizeLt n, k, l)
-          | p_id: ptr l, prim: &(@[sphere][n]), pl: pln, i': size_t i', j': size_t j'
+          | p_id: ptr l, prim: &(@[prim][n]), pl: pln, i': size_t i', j': size_t j'
           ):<> [r:int | i' <= r; r <= j] size_t r =
           if i' < j' then
-            if ~gte (prim.[!p_id.[j']], pl) then j'
+            if ~gte (pl, prim.[!p_id.[j']]) then j'
             else r2l (pf_id | p_id, prim, pl, i', pred j')
           else j' // end of [r2l]
         val [j':int] j' = r2l (pf_id | p_id, prim, pl, i', j)
       in
-        if i' < j' then begin
-          array_ptr_exch<sizeLt n> (!p_id, i', j');
-          // FIXME: should we recur with i'+1, j'-1?
-          loop (pf_id | p_id, isz, prim, i'+1, j', pl)
+        if i' < j' then let
+          val () = array_ptr_exch<sizeLt n> (!p_id, i', j');
+          val i = i'+1 and j = j'-1
+        in
+          if i < j then loop (pf_id | p_id, isz, prim, i, j, pl) else i'
         end else i'
       end // end of [loop]
     val j = loop (pf_id | p_id, isz, prim, 0, pred isz, pl)
@@ -201,7 +183,7 @@ implement accs_initialize {n} (p, n) = let
 
   fun choose_plane {k:pos} {l:addr} (
       pf_id: !array_v (sizeLt n, k, l)
-    | p_id: ptr l, isz: size_t k, prim: &(@[sphere][n]), bx: bbox
+    | p_id: ptr l, isz: size_t k, prim: &(@[prim][n]), bx: bbox
     ): pln = let
     // for now, split along longest axis
     fn mk_plane (bx: bbox):<> pln = let
@@ -229,7 +211,7 @@ implement accs_initialize {n} (p, n) = let
     pf_id: array_v (sizeLt n, k, l)
   | p_id: ptr l
   , isz: size_t k
-  , prim: &(@[sphere][n])
+  , prim: &(@[prim][n])
   , bx: bbox
   ): [i:pos | i < k] [ofs:nat] (
     MUL (i, sizeof size_t, ofs)
@@ -284,7 +266,7 @@ implement accs_initialize {n} (p, n) = let
       pf_id: !array_v (sizeLt n, k, l)
     | p_id: ptr l
     , isz: size_t k
-    , prim: &(@[sphere][n])
+    , prim: &(@[prim][n])
     , bx: bbox
     ): bvh0_vt n =
     if isz <= 1 then bvh_vt_leaf (!p_id.[0])
@@ -354,14 +336,14 @@ end
 
 fun ray_test {n,s:nat} .<s>. (
     bvh: !bvh_vt (n, s)
-  , p: &(@[sphere][n])
+  , p: &(@[prim][n])
   , rs: ray
   , t: &float, s: &sizeLt n
   , tn: float, tf: float
   ):<> bool = case+ bvh of
   | bvh_vt_leaf s' => let
       var t': float
-      val res = ray_sphere_test (rs, p.[s'], t')
+      val res = ray_prim_test (rs, p.[s'], t')
     in
       if :(t': float?) => res then let
         prval () = opt_unsome {float} (t')
@@ -386,13 +368,15 @@ fun ray_test {n,s:nat} .<s>. (
       end else let
         prval () = opt_unsome {float} (tnear')
         prval () = opt_unsome {float} (tfar')
-        val res = if pln_point_infront (pl, ray_origin rs) then begin
-                    ray_test (!r, p, rs, t, s, tnear', tfar') ||
-                    ray_test (!l, p, rs, t, s, tnear', tfar')
+        var r1: bool and r2: bool
+        val () = if pln_point_infront (pl, ray_origin rs) then begin
+                    r1 := ray_test (!r, p, rs, t, s, tnear', tfar');
+                    r2 := ray_test (!l, p, rs, t, s, tnear', tfar')
                   end else begin
-                    ray_test (!l, p, rs, t, s, tnear', tfar') ||
-                    ray_test (!r, p, rs, t, s, tnear', tfar')
+                    r1 := ray_test (!l, p, rs, t, s, tnear', tfar');
+                    r2 := ray_test (!r, p, rs, t, s, tnear', tfar')
                   end
+        val res = r1 || r2
       in
         fold@ bvh; res
       end

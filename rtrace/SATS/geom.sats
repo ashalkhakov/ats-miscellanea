@@ -39,6 +39,17 @@ staload "SATS/vec.sats"
 
 (* ****** ****** *)
 
+// axis-aligned plane
+// ax= 0 <-> dir= (1, 0, 0)
+// ax= 1 <-> dir= (0, 1, 0)
+// ax= 2 <-> dir= (0, 0, 1)
+typedef pln = @{ax= axis3, dist= float}
+
+// returns true iff point is in front of plane
+fun pln_point_infront (pl: pln, p: vec3):<> bool
+
+(* ****** ****** *)
+
 // ray: origin and direction
 abst@ype ray = @{o= vec3, d= vec3}
 
@@ -94,6 +105,13 @@ fun ray_sphere_test
 // in: [p] must be on sphere! (as determined by
 //     [ray_sphere_test])
 fun sphere_normal_at (s: sphere, p: vec3):<> vec3
+
+// in: sphere
+// out: bbox encompassing sphere
+fun bbox_of_sphere (s: sphere):<> bbox
+
+// returns true iff [s] is in front of [p]
+fun pln_sphere_infront (p: pln, s: sphere):<> bool
 
 (* ****** ****** *)
 

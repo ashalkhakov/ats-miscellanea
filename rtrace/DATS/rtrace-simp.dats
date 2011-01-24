@@ -87,33 +87,33 @@ staload _ = "DATS/geom.dats"
 (* ****** ****** *)
 
 // perform shading calculations
-// TODO
+// very simple for now
 fun shade_ray {n,m:pos} .< >.
-  (s: !scene_vt (n, m), r: ray, h: hit n)
+  (s: !scene_vt (n, m), r: ray, h: hit n, e: vec3)
   :<> rgb = let
-  // light is at infinity (directed),
-  // L is the vector to light
-  val L = vec_norm (vec_make (~0.7f, ~0.7f, 0.0f))
-  val f = h.n * L
+  // spot light at eye
+  // L is the direction to light
+  val L = vec_norm (e - h.p)
   // Lambert shading: color * dot(L, N)
   // where N is the normal at the point of impact
   // L is the direction to the light source
   // f < 0 if light cannot reach surface
-  val red = if f >= 0.0f then f * 1.0f else 0.0f
+  val f = max (0.0f, min (h.n * L, 1.0f))
 in
-  @{r= red, g= 0.0f, b= 0.0f}
+  @{r= f, g= f, b= f}
 end
 
 (* ****** ****** *)
 
 // trace the ray through the scene and perform shading
-fn trace_ray {n,m:pos} (s: !scene_vt (n, m), r: ray):<> rgb = let
+// e: eye point
+fn trace_ray {n,m:pos} (s: !scene_vt (n, m), r: ray, e: vec3):<> rgb = let
   var h: hit0
 in
   if :(h: hit0) => intersect_ray (s, r, h) then let
     prval () = opt_unsome {hit n} (h)
   in
-    shade_ray (s, r, h)
+    shade_ray (s, r, h, e)
   end else let
     prval () = opt_unnone {hit n} (h)
   in
@@ -209,7 +209,7 @@ fn spawn_trace_rays {n,m:pos} {w,h:pos} (
     , im: !image_vt (w, h)
     ) :<> void =
     if j < c.h then let
-      val () = image_write (i, j, trace_ray (s, cast_prim_ray_view (i, j, c)), im)
+      val () = image_write (i, j, trace_ray (s, cast_prim_ray_view (i, j, c), c.o), im)
     in
       loop2 (i, j+1, s, c, im)
     end else loop1 (i+1, s, c, im)
@@ -327,7 +327,7 @@ implement main (argc, argv) =
             :: nil
         , @{O= vec_make (3.0f, 3.0f, 0.0f), I= 1.0f, C= @{r= 1.0f, g= 0.5f, b= 0.5f}} :: nil
         , sc)
-      val W = i2s 1024 and H = i2s 768
+      val W = i2s 256 and H = i2s 256
       val cm: camera = @{xf= xform_identity (), fov= vec2_make (fovx, fovy), f= 0.5f} where {
         val fovx = float_of_double ($M.M_PI * 0.5)
         val aspect = (s2f W / s2f H)

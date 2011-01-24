@@ -45,6 +45,42 @@ staload "SATS/vec.sats"
 
 implement{} vec2_make (x, y) = @{x= x, y= y}
 
+implement{} vec2_get_elt_at (a, i) =
+  if i = 0 then a.x else a.y
+// end of [vec2_get_elt_at]
+
+implement{} vec2_set_elt_at (v, i, x) =
+  if i = 0 then vec2_make (x, v.y) else vec2_make (v.x, x)
+// end of [vec2_set_elt_at]
+
+implement{} vec2_set_elt_at__intsz (v, i, x) =
+  if i = 0 then vec2_make (x, v.y) else vec2_make (v.x, x)
+// end of [vec2_set_elt_at__intsz]
+
+implement{} vec2_get_elt_at__intsz (x, i) =
+  if i = 0 then x.x else x.y
+// end of [vec2_get_elt_at__intsz]
+
+implement{} vec3_get_elt_at (v, i) =
+  if i = 0 then v.x else if i = 1 then v.y else v.z
+// end of [vec3_get_elt_at]
+
+implement{} vec3_set_elt_at (v, i, x) =
+  if i = 0 then vec_make (x, v.y, v.z)
+  else if i = 1 then vec_make (v.x, x, v.z)
+  else vec_make (v.x, v.y, x)
+// end of [vec3_set_elt_at]
+
+implement{} vec3_get_elt_at__intsz (v, i) =
+  if i = 0 then v.x else if i = 1 then v.y else v.z
+// end of [vec3_get_elt_at__intsz]
+
+implement{} vec3_set_elt_at__intsz (v, i, x) =
+  if i = 0 then vec_make (x, v.y, v.z)
+  else if i = 1 then vec_make (v.x, x, v.z)
+  else vec_make (v.x, v.y, x)
+// end of [vec3_set_elt_at__intsz]
+
 implement{} vec_make (x, y, z) = @{x= x, y= y, z= z}
 
 implement{} vec_add (a, b) = @{x= a.x+b.x, y= a.y+b.y, z= a.z+b.z}

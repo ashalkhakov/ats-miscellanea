@@ -35,120 +35,37 @@
 
 (* ****** ****** *)
 
-// TODO: get away from this mess
-// - implement indexing in ATS (?)
-// - find a way to implement indexing functions
-//   in C without exposing ATS representation
-//   for vectors (?)
-
-%{#
-#ifndef VEC2_SATS_H
-#define VEC2_SATS_H
-typedef struct vec_vec2_s {
-  ats_float_type x, y;
-} vec_vec2;
-ATSinline()
-ats_float_type vec2_get_elt_at (vec_vec2 x, ats_size_type i) {
-  return ((ats_float_type *)(&x))[i] ;
-}
-ATSinline()
-vec_vec2 vec2_set_elt_at (vec_vec2 x, ats_size_type i, ats_float_type f) {
-  vec_vec2 r ;
-  r.x = x.x ;
-  r.y = x.y ;
-  ((ats_float_type *)(&r))[i] = f ;
-  return r ;
-}
-ATSinline()
-ats_float_type vec2_get_elt_at__intsz (vec_vec2 x, ats_int_type i) {
-  return ((ats_float_type *)(&x))[i] ;
-}
-ATSinline()
-vec_vec2 vec2_set_elt_at__intsz (vec_vec2 x, ats_int_type i, ats_float_type f) {
-  vec_vec2 r ;
-  r.x = x.x ;
-  r.y = x.y ;
-  ((ats_float_type *)(&r))[i] = f ;
-  return r ;
-}
-#endif /* VEC2_SATS_H */
-%}
-
-typedef vec2 = $extype_struct "vec_vec2" of {x= float, y= float}
+typedef vec2 = @{x= float, y= float}
 
 fun{} vec2_make (x: float, y: float):<> vec2
 
-fun vec2_get_elt_at (x: vec2, i: sizeLt 2):<> float =
-  "vec2_get_elt_at"
+fun{} vec2_get_elt_at (x: vec2, i: sizeLt 2):<> float
 overload [] with vec2_get_elt_at
 
-fun vec2_set_elt_at (x: vec2, i: sizeLt 2, a: float):<> vec2 =
-  "vec2_set_elt_at"
+fun{} vec2_set_elt_at (x: vec2, i: sizeLt 2, a: float):<> vec2
 overload [] with vec2_set_elt_at
 
 // these are present only for convenience
 
-fun vec2_set_elt_at__intsz {i:nat | i < 2} (x: vec2, i: int i, a: float):<> vec2 =
-  "vec2_set_elt_at__intsz"
+fun{} vec2_set_elt_at__intsz {i:nat | i < 2} (x: vec2, i: int i, a: float):<> vec2
 overload [] with vec2_set_elt_at__intsz
 
-fun vec2_get_elt_at__intsz {i:nat | i < 2} (x: vec2, i: int i):<> float =
-  "vec2_get_elt_at__intsz"
+fun{} vec2_get_elt_at__intsz {i:nat | i < 2} (x: vec2, i: int i):<> float
 overload [] with vec2_get_elt_at__intsz
 
-%{#
-#ifndef VEC_SATS_H
-#define VEC_SATS_H
+typedef vec3 = @{x= float, y= float, z= float}
 
-typedef struct vec_vec3_s {
-  ats_float_type x, y, z;
-} vec_vec3;
-ATSinline()
-ats_float_type vec3_get_elt_at (vec_vec3 x, ats_size_type i) {
-  return ((ats_float_type *)(&x))[i] ;
-}
-ATSinline()
-vec_vec3 vec3_set_elt_at (vec_vec3 x, ats_size_type i, ats_float_type f) {
-  vec_vec3 r ;
-  r.x = x.x ;
-  r.y = x.y ;
-  r.z = x.z ;
-  ((ats_float_type *)(&r))[i] = f ;
-  return r ;
-}
-ATSinline()
-ats_float_type vec3_get_elt_at__intsz (vec_vec3 x, ats_int_type i) {
-  return ((ats_float_type *)(&x))[i] ;
-}
-ATSinline()
-vec_vec3 vec3_set_elt_at__intsz (vec_vec3 x, ats_int_type i, ats_float_type f) {
-  vec_vec3 r ;
-  r.x = x.x ;
-  r.y = x.y ;
-  r.z = x.z ;
-  ((ats_float_type *)(&r))[i] = f ;
-  return r ;
-}
-#endif /* VEC_SATS_H */
-%}
-
-typedef vec3 = $extype_struct "vec_vec3" of {x= float, y= float, z= float}
-
-fun vec3_get_elt_at (x: vec3, i: sizeLt 3):<> float =
-  "vec3_get_elt_at"
+fun{} vec3_get_elt_at (x: vec3, i: sizeLt 3):<> float
 overload [] with vec3_get_elt_at
 
-fun vec3_set_elt_at (x: vec3, i: sizeLt 3, a: float):<> vec3 =
-  "vec3_set_elt_at"
+fun{} vec3_set_elt_at (x: vec3, i: sizeLt 3, a: float):<> vec3
 overload [] with vec3_set_elt_at
 
 // these are present only for convenience
-fun vec3_get_elt_at__intsz {i:nat | i < 3} (x: vec3, i: int i):<> float =
-  "vec3_get_elt_at__intsz"
+fun{} vec3_get_elt_at__intsz {i:nat | i < 3} (x: vec3, i: int i):<> float
 overload [] with vec3_get_elt_at__intsz
 
-fun vec3_set_elt_at__intsz {i:nat | i < 3} (x: vec3, i: int i, a: float):<> vec3 =
-  "vec3_set_elt_at__intsz"
+fun{} vec3_set_elt_at__intsz {i:nat | i < 3} (x: vec3, i: int i, a: float):<> vec3
 overload [] with vec3_set_elt_at__intsz
 
 // ortho-normal basis: f(ront), r(ight), u(p)
