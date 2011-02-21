@@ -7,8 +7,7 @@
 // natural numbers: zero and successor operation
 datasort Nat = z | s of Nat
 
-// propositional equality on naturals
-dataprop nat_eq (Nat, Nat) = {N:Nat} nat_eq_refl (N, N)
+dataprop nat_eq_prop (Nat, Nat) = {N:Nat} nat_eq_prop_refl (N, N)
 
 // [plus (N, M, P)] holds iff [N+M = P]
 dataprop plus (Nat, Nat, Nat) =
@@ -17,13 +16,13 @@ dataprop plus (Nat, Nat, Nat) =
 
 // addition is a function
 prfun plus_fun {A,B,C,C':Nat} .<A>.
-  (pf1: plus (A, B, C), pf2: plus (A, B, C')):<> nat_eq (C, C') =
+  (pf1: plus (A, B, C), pf2: plus (A, B, C')):<> nat_eq_prop (C, C') =
   case+ pf1 of
-  | plusz () => let val plusz () = pf2 in nat_eq_refl () end
+  | plusz () => let val plusz () = pf2 in nat_eq_prop_refl () end
   | pluss pf1 => let
       val pluss pf2 = pf2
-      val nat_eq_refl () = plus_fun (pf1, pf2)
-    in nat_eq_refl () end
+      val nat_eq_prop_refl () = plus_fun (pf1, pf2)
+    in nat_eq_prop_refl () end
 
 // addition is total
 prfun plus_tot {N1,N2:Nat} .<N1>. (): [N3:Nat] plus (N1, N2, N3) =
@@ -103,3 +102,45 @@ prfun sum_odds {N1,N2,N3:Nat} .<N1>.
     in
       evens (sum_odds (pf1, pf2, pf3))
     end
+
+(* ****** ****** *)
+// propositional equality on naturals
+
+// [nat_eq (M, N)] holds iff [M = N]
+dataprop nat_eq (Nat, Nat) =
+  | nat_eqz (z, z)
+  | {N1,N2:Nat} nat_eqs (s N1, s N2) of nat_eq (N1, N2)
+
+// equality is total
+// (also an introduction rule)
+prfun nat_eq_istot {N:Nat} .<N>. ():<> nat_eq (N, N) = scase N of
+  | z () => nat_eqz ()
+  | s (N') => nat_eqs (nat_eq_istot {N'} ())
+ 
+prfun nat_eq_elim {N1,N2:Nat} .<N1>. (
+    pf: nat_eq (N1,N2)
+  ):<> nat_eq_prop (N1, N2) = case+ pf of
+  | nat_eqz () => nat_eq_prop_refl ()
+  | nat_eqs pf => let
+      val+ nat_eq_prop_refl () = nat_eq_elim pf
+    in
+      nat_eq_prop_refl ()
+    end // end of [nat_eq_elim]
+
+// equality is symmetric: a=b <-> b=a
+prfun nat_eq_symm {N1,N2:Nat} .<N1>. (
+    pf: nat_eq (N1, N2)
+  ):<> nat_eq (N2, N1) = case+ pf of
+  | nat_eqz () => nat_eqz ()
+  | nat_eqs pf => nat_eqs (nat_eq_symm pf)
+
+// equality is transitive: a=b -> b=c -> a=c
+prfun nat_eq_trans {N1,N2,N3:Nat} .<N1>. (
+    pf1: nat_eq (N1, N2), pf2: nat_eq (N2, N3)
+  ):<> nat_eq (N1, N3) = case+ pf1 of
+  | nat_eqz () => pf2
+  | nat_eqs pf1 => let
+      val+ nat_eqs pf2 = pf2
+    in
+      nat_eqs (nat_eq_trans (pf1, pf2))
+    end // end of [nat_eq_trans]
