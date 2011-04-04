@@ -1,0 +1,17 @@
+This is a regexp matching library-in-the-making.
+
+We have written an implementation largely following the approach outlined
+in "Regular-expression derivatives reexamined" (by Owens, Reppy, Turon).
+The implementation doesn't support Unicode and regular vectors (yet),
+but based on a few tests, it seems to work.
+
+We are experimenting with a rewrite that uses linear types and in-place
+mutation instead of a purely functional approach taken in the paper
+to produce an implementation that is fast and correct (at the expense
+of clarity).
+
+The end goal is two-fold:
+- to provide a regular expression matching library
+- to implement a tool for generating lexical analyzers
+
+-Artyom Shalkhakov, artyom DOT shalkhakov AT gmail DOT com
