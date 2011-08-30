@@ -35,6 +35,11 @@
 
 (* ****** ****** *)
 
+typedef vec (a:t@ype, n:int) = @[a][n]
+typedef vec3_t (a:t@ype) = vec (a, 3)
+fun{a:t@ype} add_flt_flt (x: a, y: a):<> a
+fun{a:t@ype} add_vec_vec {n:nat} (x: vec (a, n), y: vec (a, n)):<> vec (a, n)
+
 typedef vec2 = @{x= float, y= float}
 
 fun{} vec2_make (x: float, y: float):<> vec2
@@ -78,13 +83,7 @@ typedef AXIS (n:int) = int n
 #define Ax 0
 #define Ay 1
 #define Az 2
-(*
-datatype AXIS (int) =
-  // positive planes
-  | Ax (0) | Ay (1) | Az (2)
-  // negative planes
-  | Anx (3) | Any (4) | Anz (5)
-*)
+
 typedef axis0 = [n:int] AXIS n
 typedef axis2 = [n:int | n >= 0; n < 2] AXIS n
 typedef axis3 = [n:int | n >= 0; n < 3] AXIS n

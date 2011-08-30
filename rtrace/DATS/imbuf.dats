@@ -116,7 +116,7 @@ implement image_height {n,m} (im) = im.buf.h
 
 implement image_write {n,m} (i, j, p, im) = () where {
   // image pixel at (i,j) is actually stored at b + (j*w + i)
-  val (pf_at, fpf | pij) = matrix_ptr_takeout_tsz {pxl} (
+  val (pf_at, fpf | pij) = matrix_ptr_takeout_elt_tsz {pxl} (
     im.pfb | im.buf.b, j, im.buf.w, i, sizeof<pxl>
   )
   val () = !pij := quantize (p.r, p.g, p.b)

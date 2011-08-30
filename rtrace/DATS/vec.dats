@@ -41,6 +41,16 @@ staload "SATS/vec.sats"
 
 #define ATS_DYNLOADFLAG 0 // no dynloading at runtime
 
+(* ****** ****** *)
+
+(*
+implement add_flt_flt<float> (x, y) = x + y
+implement{a} add_vec_vec {n} (x, y) = $array (x.0 + y.0)
+
+fun add_vec_vec (x: @[int][2], y: @[int][2]): @[int][2] =
+  @[int](0, 1)
+*)
+
 (* ****** ***** *)
 
 implement{} vec2_make (x, y) = @{x= x, y= y}
@@ -120,19 +130,6 @@ implement{} vec_min (a, b) =
   vec_make (min (a.x, b.x), min (a.y, b.y), min (a.z, b.z))
 implement{} vec_max (a, b) =
   vec_make (max (a.x, b.x), max (a.y, b.y), max (a.z, b.z))
-
-fun test (): void = let
-  val a = vec_make (0.0f, 1.0f, 2.0f)
-  val a = a[size1_of_int1 0] := 1.0f
-//  val a = a
-in (*empty*) end
-
-(*
-implement{} vec_axis (v, a) = case+ a of
-  | Ax () => v.x
-  | Ay () => v.y
-  | Az () => v.z
-*)
 
 (* ****** ******* *)
 
