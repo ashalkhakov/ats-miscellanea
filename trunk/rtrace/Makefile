@@ -52,12 +52,12 @@ _LIBS= m
 # compilers and flags
 CC= gcc
 debug : CFLAGS= -Wall
-release : CFLAGS= -O3
+release : CFLAGS= -O3 -msse
 LDFLAGS= $(patsubst %,-l%,$(_LIBS))
 typecheck: ATSFLAGS= -tc
 debug: ATSFLAGS= -g
 release: ATSFLAGS=
-ATSCC=atscc
+ATSCC= $(ATSHOME)/bin/atscc
 debug: ODIR=debug
 release: ODIR=release
 

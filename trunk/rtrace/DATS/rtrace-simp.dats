@@ -199,14 +199,14 @@ fn spawn_trace_rays {n,m:pos} {w,h:pos} (
   , ib: &image_vt (w, h)
   ):<> void = let
   fn* loop1 {i:nat | i <= w} .<w-i+1,0>. (
-      i: size_t i, s: !scene_vt (n, m), c: camview (w, h), im: !image_vt (w, h)
+      i: size_t i, s: !scene_vt (n, m), c: camview (w, h), im: &image_vt (w, h)
     ):<> void =
     if i < c.w then loop2 (i, 0, s, c, im)
   // end of [loop1]
 
   and loop2 {i,j:nat | i < w; j <= h} .<w-i,h-j+1>. (
       i: size_t i, j: size_t j, s: !scene_vt (n, m), c: camview (w, h)
-    , im: !image_vt (w, h)
+    , im: &image_vt (w, h)
     ) :<> void =
     if j < c.h then let
       val () = image_write (i, j, trace_ray (s, cast_prim_ray_view (i, j, c), c.o), im)
