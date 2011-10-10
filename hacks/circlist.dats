@@ -83,63 +83,123 @@ end // end of [slnode_free]
 end // end of [local]
 
 (* ****** ****** *)
-// to work with circular linked lists, we specialize
-// the definition of a singly-linked segment
+// our circular singly-linked list definition
 
-viewdef cslist_v
-  (a:viewt@ype, n:int, l:addr) = slseg_v (a, n, l, l)
-// end of [cslist_v]
+dataview cslist_v (a:vt0p, int, addr) =
+  | cslist_v_none (a, 0, null)
+  | {n:nat} {l1:agz;l2:addr}
+    cslist_v_some (a, n+1, l1) of (
+      slnode_v (a, l1, l2), slseg_v (a, n, l2, l1)
+    ) // end of [cslst_v]
 
-// AS: not sure if names are accurate
-// also, no justification is provided
+extern
+fun{a:vt0p}
+  cslist_is_nil
+  {n:nat} {l:addr}
+  (pf: !cslist_v (a, n, l) | p: ptr l)
+  :<> bool (n == 0)
+// end of [cslist_is_nil]
 
-extern prfun slseg_v_isnot_null {a:vt0p} {n:nat} {l1:agz} {l2:addr} (
-  pf: !slseg_v (a, n, l1, l2)
-):<> [n > 0] void
+extern
+fun{a:vt0p}
+  cslist_is_cons
+  {n:nat} {l:addr}
+  (pf: !cslist_v (a, n, l) | p: ptr l)
+  :<> bool (n > 0)
+// end of [cslist_is_cons]
 
-extern fun slseg_is_cons {a:vt0p} {n:nat} {l1,l2:addr} (
-  pf: !slseg_v (a, n, l1, l2) | p1: ptr l1, p2: ptr l2
-):<> bool (n > 0) = "atspre_pneq"
+extern
+fun{a:vt0p}
+  cslist_make_sing
+  {l1,l2:addr} (
+    pfnod: slnode_v (a, l1, l2)
+  | p: ptr l1
+  ) :<> (cslist_v (a, 1, l1) | void)
+// end of [cslist_make_sing]
 
-extern fun slseg_is_nil {a:vt0p} {n:nat} {l1,l2:addr} (
-  pf: !slseg_v (a, n, l1, l2) | p1: ptr l1, p2: ptr l2
-):<> bool (n == 0) = "atspre_peq"
+extern
+fun{a:vt0p}
+  cslist_insert_after
+  {n:pos} {l1,l2,l3:addr} (
+    pfnod: slnode_v (a, l2, l3)
+  , pfcsl: !cslist_v (a, n, l1) >> cslist_v (a, n+1, l1)
+  | p1: ptr l1, p2: ptr l2
+  ) :<> void
+// end of [cslist_insert_after]
+
+(* ****** ****** *)
+
+implement{a} cslist_is_nil {n} {l} (pf | p) =
+  if p > null then let
+    prval cslist_v_some (pf_hd, pf_seg) = pf
+    prval () = pf := cslist_v_some (pf_hd, pf_seg)
+  in
+    false
+  end else let
+    prval cslist_v_none () = pf
+    prval () = pf := cslist_v_none ()
+  in
+    true
+  end // end of [cslist_is_nil]
+
+implement{a} cslist_is_cons {n} {l} (pf | p) = ~cslist_is_nil (pf | p)
+
+implement{a} cslist_make_sing {l1,l2} (pf_nod | p) = let
+  prval () = slnode_ptr_is_gtz (pf_nod)
+  val () = slnode_set_next (pf_nod | p, p)
+in
+  (cslist_v_some (pf_nod, slseg_v_nil ()) | ())
+end // end of [cslist_make_sing]
+
+implement{a} cslist_insert_after {n} {l1,l2,l3} (
+  pf_nod, pf_csl | p1, p2
+) = let
+  prval () = slnode_ptr_is_gtz (pf_nod)
+  prval cslist_v_some (pf_hd, pf_seg) = pf_csl
+  val () = slnode_set_next (pf_nod | p2, slnode_get_next (pf_hd | p1))
+  val () = slnode_set_next (pf_hd | p1, p2)
+  prval () = pf_csl := cslist_v_some (pf_hd, slseg_v_cons (pf_nod, pf_seg))
+in
+  (*empty*)
+end // end of [cslist_insert_after]
+
+(* ****** ****** *)
 
 // prints a non-empty circular linked list, freeing it along the way
-fun printcirc {n:nat} {l:agz} (
+fun printcirc {n:pos} {l:addr} (
   pf_csl: cslist_v (int, n, l) | p: ptr l
 ) : void = let
   fun loop {n:nat} {l1,l2:addr} (
-    pf_csl: slseg_v (int, n, l1, l) | p1: ptr l1, p2: ptr l
-  ) : void =
-    if slseg_is_cons (pf_csl | p1, p2) then let
-      prval slseg_v_cons (pf_at, pf1_csl) = pf_csl
-      val nxt = slnode_get_next<int> (pf_at | p1)
-      prval (pf1_at, fpf) = slnode_v_takeout_val {int} (pf_at)
-      val () = printf ("%d\n", @(!p1))
-      prval () = pf_at := fpf (pf1_at)
-      val () = slnode_free<int> (pf_at | p1)
-      val () = loop (pf1_csl | nxt, p2)
+    pf_nod: slnode_v (int, l1, l2),
+    pf_seg: slseg_v (int, n, l2, l)
+  | p1: ptr l1, p2: ptr l
+  ) : void = let
+    prval (pf1_at, fpf) = slnode_v_takeout_val {int} (pf_nod)
+    val () = printf ("%d\n", @(!p1))
+    prval () = pf_nod := fpf (pf1_at)
+    val p' = slnode_get_next<int> (pf_nod | p1)
+    val () = slnode_free<int> (pf_nod | p1)
+  in
+    if p' <> p2 then let
+      prval slseg_v_cons (pf_nod, pf1_seg) = pf_seg
     in
-      (*empty*)
+      loop (pf_nod, pf1_seg | p', p2)
     end else let
-      // empty!
-      prval slseg_v_nil () = pf_csl
+      prval () = __assert () where {
+        extern prfun __assert (): [n <= 0] void
+      } // end of [prval]
+      prval slseg_v_nil () = pf_seg
     in
       (*empty*)
     end // end of [if]
+  end // end of [loop]
   // end of [loop]
-  prval () = slseg_v_isnot_null (pf_csl)
-  prval slseg_v_cons (pf_at, pf1_csl) = pf_csl
-  prval (pf1_at, fpf) = slnode_v_takeout_val {int} (pf_at)
-  val () = printf ("%d\n", @(!p))
-  prval () = pf_at := fpf (pf1_at)
-  val p' = slnode_get_next<int> (pf_at | p)
-  val () = slnode_free<int> (pf_at | p)
-  val () = loop (pf1_csl | p', p)
+  prval cslist_v_some (pf_hd, pf_seg) = pf_csl
 in
-  (*empty*)
+  loop (pf_hd, pf_seg | p, p)
 end // end of [printcirc]
+
+(* ****** ****** *)
 
 implement main (argc, argv) = let
   val (pfopt | p1) = slnode_alloc<int> ()
@@ -152,21 +212,19 @@ in
       prval Some_v pf2 = pfopt
 
       // finally, work with it
-      val () = slnode_set_next<int?> (pf1 | p1, p2)
       prval (pf_at, fpf) = slnode_v_takeout_val {int?} (pf1)
       val () = !p1 := 10
       prval () = pf1 := fpf {int} (pf_at)
 
-      val () = slnode_set_next<int?> (pf2 | p2, p1)
+      val (pfcl | ()) = cslist_make_sing<int> (pf1 | p1)
+
       prval (pf_at, fpf) = slnode_v_takeout_val {int?} (pf2)
       val () = !p2 := 15
       prval () = pf2 := fpf {int} (pf_at)
 
-      // create a circular singly-linked list...
-      prval pfsl = slseg_v_cons (pf1, slseg_v_cons (pf2, slseg_v_nil ()))
+      val () = cslist_insert_after<int> (pf2, pfcl | p1, p2)
       val () = print "printing a circular list:\n"
-      // ...and use it
-      val () = printcirc (pfsl | p1)
+      val () = printcirc (pfcl | p1)
     in
       print "success\n"
     end else let
