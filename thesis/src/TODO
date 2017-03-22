@@ -1,0 +1,26 @@
+- find a way to show that evaluation is the same as normalization
++ deal with substitution
+- formal specification in ATS/LF (more dataprops!)
+- interpreter in CPS (as an optimization,
+   as a way to show that implementation need
+   not duplicate specification)
+- add more base types (booleans at least),
+  perhaps even conjuction and disjunction
++ write a parser/type-checker/type inferencer
+  (this is not top-priority, but would be nice to have
+  to make things more realistic)
+- a number of program transformations?
+  (CPS, closure conversion, defunctionalization, etc.)
+
+
+- parse directly into dynamic IR (see Typing dynamic typing),
+  then typecheck without allocating anything at all
+  (we can also get rid of TY0/EXP0 vs TY/EXP for the most part)
+
+future work:
+- more language features (mutability and polymorphism)
+- compilation to byte-code (abstract machine) or even raw assembly
+- relation to SSA
+- practical opportunity: an LLVM-like project with type safety!
+  another would be typed compiler to JS (for neat web programming)
+  see "the essense of javascript" by arjun guha

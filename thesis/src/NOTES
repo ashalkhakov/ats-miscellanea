@@ -1,0 +1,183 @@
+see also:
+1) Statically Verified Type-Preserving Code Transformations
+in Haskell, Louis-Julien Guillemette, Stefan Monnier
+2) Typed Transformations of Typed Abstract Syntax,
+Arthur Baars, S. Doaitse Swierstra, Marcos Viera
+3) Omega language (Sheard et al)
+4) Typing Dynamic Typing (Baars, Swierstra)
+
+*** further development
+
+we could extend our STLC to handle System T thus:
+- add truth values
+- add natural numbers
+- if-then-else construct
+- recursion schema over naturals
+  natrec: c -> (Nat -> c -> c) -> Nat -> c
+  where c can be any type
+
+*** Formal syntax, typing and semantics
+
+syntax
+base type b ::= unit
+types t ::= b | t1 -> t2
+terms e ::= x | \x.e | e1(e2)
+values v ::= x | \x.e
+contexts G ::= 0 | G,x:t
+(we use x for variables)
+
+the typing rules
+------------(type-one)
+G,x:t |-0 x:t
+
+  G |-0 e:t
+------------(type-shift)
+G,x:t |-0 e:t
+
+G |-0 e:t
+---------(var)
+G |- e:t
+
+FIXME: where is the exchange rule? we'll assume it is nonexistent
+(but I think it is implicit in |-0 rules)
+
+G, x:t1 |- e:t2
+---------------(type-lambda)
+G |- \x.e:t1->t2
+
+G |- e1:t1->t2  G |- e2:t1
+--------------------------(type-application)
+G |- e1(e2):t2
+
+example derivations using the typing rules above
+------------(type-one)
+0,x:t |-0 x:t
+-------------(var)
+0,x:t |- x:t
+--------------(type-lambda)
+ 0 |- \x.x:t->t
+
+-----------------------(type-one)       -----------------------(type-one)
+0,x:t1->t2 |-0 x:t1->t2                 0,x:t1->t2,y:t1 |-0 y:t1
+-----------------------(type-shift)     -----------------------(var)
+0,x:t1->t2,y:t1 |-0 x:t1->t2            0,x:t1->t2,y:t1 |- y:t1
+----------------------------(var)
+0,x:t1->t2,y:t1 |- x:t1->t2
+----------------------------------------------------------------(type-applic)
+0,x:t1->t2,y:t1 |- (x)y:t2
+--------------------------(type-lambda)
+0,x:t1->t2 |- \y:t1.(x)y:t1->t2
+-------------------------------(type-lambda)
+0 |- \x:t1->t2.\y:t1.(x)y:(t1->t2)->t1->t2
+
+natural operational semantics
+------------(eval-lambda)
+\x.e => \x.e
+
+e1 => \x.e  e2 => v1   e[x/v1] => v2
+------------------------------------(eval-application)
+          e1(e2) => v2
+
+*** Some derivation using our typed abstract syntax (see shared/tas.sats)
+
+1. \x:int.x:int->int = \1 = EXPlam (EXPvar VARone): EXP (nil, int ->> int)
+------------------------
+VARone (int :: nil, int)
+------------------------
+EXPvar (int :: nil, int)
+------------------------
+EXPlam (nil, int ->> int)
+
+2. \x:int->int.\y:int.xy = \:int->int\:int((2)1):int
+VARone (int->>int::nil,int->>int)        VARone (int::int->>int::nil,int)
+VARshi (int::int->>int::nil,int->>int)   EXPvar (int::int->>int::nil,int) =1
+EXPvar (int::int->>int::nil,int->>int) =2
+-------------------------------------------------------------------------
+EXPapp (int::int->>int::nil,int) = (2) 1
+EXPlam (int->>int::nil,int->>int) = \(2) 1
+EXPlam (nil,(int->>int)->>int->>int) = \\(2) 1
+we get: EXPlam (EXPlam (EXPapp (EXPvar (VARshi VARone), EXPvar VARone)))
+
+some context things.
+0, x:int |-_0 x:int (type-one) --> VARone (int::nil, int)
+---------------------------------------------------------
+0, x:int, y:int |-_0 x:int (type-shift) --> VARshift (int::int::nil, int)
+
+0, x:int, y:int |-_0 y:int (type-one) --> VARone (int::int::nil,int)
+--------------------------------------------------------------------
+0, x:int, y:int, z:int |-_0 y: int (type-shift) -->
+        VARshift (int::int::int::nil, int)
+
+0,x:int->int,y:int |-_0 y:int (type-one) --> VARone (int::int->>int::nil,int)
+-----------------------------------------------------------------------------
+0,x:int->int,y:int,z:int->int |-_0 y:int (type-shift) -->
+       VARshift (int->>int::int::int->int::nil, int)
+
+*** Conversion to de Bruijn nameless notation
+
+state: level
+when we encounter a binder, we increment level by 1 and then record
+at which level the bound identifier is (in our environment)
+we then proceed recursively with new level.
+when we encounter a variable, we just look it up in our data
+structure, and the resulting index is the difference between
+the level and what we have looked up!
+
+env ::= nil | (id, level, env)
+(lm) s, t ::= id | \x.s | s t where id = x, x0, x1, ...
+(db) s, t ::= n | \s | s t where n = 1,2,...
+lookup: id * env -> level
+f: env * lm * level -> db
+f e id n = n - lookup id e
+f e (\x.s) n = f (x, n, e) s n' where n' = n+1
+f e (s t) n = (f e s n) (f e t n)
+
+f nil (\x.x) 1 = \ (f (x, 1, nil) x 2) = \ (2 - 1) = \1
+f nil (\x.\y.xy) 1 = \ (f (x, 1, nil) (\y.xy) 2) =
+  \\(f (y, 2, (x, 1, nil)) (xy) 3)) =
+  \\(f (y, 2, (x, 1, nil)) x 3) (f (y, 2, (x, 1, nil)) y 3) =
+  \\(3-1) (3-2) = \\21
+
+there's another version of this algorithm, but it requires
+a lot of munging...
+shift: env -> env
+shift nil = nil
+shift (x, level, env) = (x, level+1, shift env)
+
+f2: env * lm -> db
+f2 e id = lookup id e
+f2 e (\x.s) = \ (f2 (x, 1, shift e) s)
+f2 e (s t) = (f2 e s) (f2 e t)
+
+f2 nil (\x.x) = \ (f2 (x, 1, nil) x) = \ (lookup x (x, 1, nil)) = \1
+f2 nil (\x.\y.xy) = \ (f2 (x, 1, nil) (\y.xy)) =
+   \ (\ (f2 (y, 1, (x, 2, nil)) (xy))) =
+   \\ (f2 (y,1,(x,2,nil)) x) (f2 (y,1,(x,2,nil)) y)
+   \\ (lookup x (y,1,(x,2,nil))) (lookup y (y,1,(x,2,nil))) =
+   \\ 2 1
+
+and yet another version! first redefine the environment
+env ::= nil | (id, env)
+
+this function starts at 1, and increments the level upon descending
+into the environment.
+lookup: id * env * level -> db
+lookup x nil lvl = error "internal"
+lookup x cons(y,env) lvl = if x = y then lvl else lookup x env (lvl+1)
+
+f3: env * lm -> db
+f3 e id = lookup id e 1
+f3 e (\x.s) = \ (f3 (x, e) s)
+f3 e (s t) = (f3 e s) (f3 e t)
+
+f3 nil (\x.x) = \ (f3 (x,nil) x) = \ (lookup x (x, nil) 1) = \1
+f3 nil (\x.\y.xy) = \ (f3 (x, nil) (\y.xy)) = \ \ (f3 (y, (x, nil)) (xy)) =
+   \\ (f3 (y, (x, nil)) x) (f3 (y, (x, nil)) y) =
+   \\ (lookup x (y, (x, nil)) 1) (lookup y (y, (x, nil)) 1) =
+   \\ (lookup (x, nil) 2) 1 = \\ 2 1
+
+it seems as if three versions are identical. but are they?
+
+FIXME: does [f] work for open terms? we don't want open terms!
+FIXME: how to translate the subtraction to our case?
+FIXME: how does this interoperate with environments?

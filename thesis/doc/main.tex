@@ -1,0 +1,82 @@
+\documentclass[a4paper,14pt,russian,oneside]{extarticle}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{graphicx}
+\usepackage{indentfirst} % indent first line of any paragraph
+
+% times new roman font
+%\usepackage{pscyr}
+%\renewcommand{\rmdefault}{cmr}
+%\renewcommand{\sfdefault}{ftx}
+%\renewcommand{\ttdefault}{cmtt}
+
+\usepackage{listings}
+\usepackage{atslistings}
+\usepackage{amssymb,amsfonts,amsmath}
+\graphicspath{{img/}}
+\usepackage{proof}
+
+\makeatletter
+\renewcommand{\@biblabel}[1]{#1} % [n] -> n in bibliography listing
+\makeatother
+
+\usepackage{geometry} % change page margins
+\geometry{left=3cm}
+\geometry{right=1cm}
+\geometry{top=2cm}
+\geometry{bottom=2.5cm}
+
+% table of contents
+\makeatletter
+\renewcommand{\@dotsep}{10000} % no dots
+\renewcommand\l@section{\@dottedtocline{1}{0em}{1.5cm}}
+\renewcommand\l@subsection{\@dottedtocline{2}{0em}{1.5cm}}
+\renewcommand\l@subsubsection{\@dottedtocline{3}{0em}{1.5cm}}
+\renewcommand\l@paragraph{\@dottedtocline{4}{0em}{1.5cm}}
+\renewcommand\l@subparagraph{\@dottedtocline{5}{0em}{1.5cm}}
+\makeatother
+
+\setlength{\parindent}{1.5cm} % paragraph indent
+
+\usepackage[labelsep=period]{caption}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]
+  {\normalfont\normalsize\centering}{\thesection}{0.3cm}{}
+\titleformat{\subsection}
+  {\normalfont\normalsize}{\thesubsection}{0.3cm}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize}{\thesubsubsection}{0.3cm}{}
+\titlespacing{\section}{0pt}{30pt}{30pt}
+\titlespacing{\subsection}{1.5cm}{25pt}{25pt}
+\titlespacing{\subsubsection}{1.5cm}{25pt}{25pt}
+
+\newcommand{\appsection}[1]{\let\oldthesection\thesection
+  \renewcommand{\thesection}{Приложение \oldthesection}
+  \section{#1}\let\thesection\oldthesection}
+
+% prevent paragraph overflowing
+\sloppy
+
+\title{Типизированный интерпретатор просто-типизированного $\lambda$-исчисления}
+
+\begin{document}
+%\maketitle
+\include{abstract}
+\renewcommand{\contentsname}{СОДЕРЖАНИЕ}
+\tableofcontents
+\newpage
+\include{intro}
+\include{chapt1}
+\include{chapt2}
+\include{concl}
+
+\newpage
+\bibliographystyle{utf8gost/utf8gost71u}
+\bibliography{papers}
+
+\include{appnd1}
+\include{appnd2}
+\end{document}

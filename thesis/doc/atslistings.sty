@@ -1,0 +1,28 @@
+%-----------------------------------------------------------------------------
+% ATS language definition for the LaTeX listings package
+%
+% Matthew Danish <url:http://cs-people.bu.edu/md>
+%-----------------------------------------------------------------------------
+
+
+\lstdefinelanguage{ATS}
+  {morekeywords={extern,fun,typedef,abstype,absview,abst@ype,datatype,datat@ype,dataview,dataviewtype,dataviewt@ype,dataprop,absviewtype,absviewt@ype,implement,case,of,if,then,else,begin,end,let,in,val,fn,lam,@lam,prval,prfun,viewdef,where,sortdef,datasort,staload,dynload,var},
+    sensitive=true,
+    morecomment=[l]{//},
+    morecomment=[n]{(*}{*)},
+    morestring=[b]",
+  }
+\lstset{language=ATS}
+\lstset{literate=
+  {->}{{$\to$ }}1
+  {<=}{{$\leq$ }}2
+  {>=}{{$\geq$ }}1
+  {<>}{{$\neq$ }}1
+  {:<>}{{$:_{\text{pure}}$} }3
+  {:<prf>}{{$:_{\text{proof}}$} }3
+  {-<lin,prf>}{{$\underset{\text{proof}}{\multimap}$} }4
+  {\{}{{$\{$}}1
+  {\}}{{$\}$ }}1
+  {|}{{$\mid$ }}1
+}
+

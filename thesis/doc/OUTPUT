@@ -1,0 +1,22 @@
+input term: app(lam(S(var(0))), S(S(Z)))
+evaluated term: S(S(S(Z)))
+input term: app(lam(if(var(0),F,T)), F)
+evaluated term: T
+input term: app(app(lam(lam(app(app(lam(lam(if(var(1),var(0),F))), app(lam(if(var(0),F,T)), var(1))), var(0)))), T), F)
+evaluated term: F
+input term: app(lam(case(var(0), T, F)), Z)
+evaluated term: T
+input term: app(lam(case(var(0), T, F)), S(Z))
+evaluated term: F
+input term: app(lam(case(var(0), Z, var(0))), Z)
+evaluated term: Z
+input term: app(lam(case(var(0), Z, var(0))), S(S(Z)))
+evaluated term: S(Z)
+input term: app(app(lam(fix(lam(if(app(lam(case(var(0), T, F)), var(0)),var(2),S(app(var(1), app(lam(case(var(0), Z, var(0))), var(0)))))))), Z), Z)
+evaluated term: Z
+input term: app(app(lam(fix(lam(if(app(lam(case(var(0), T, F)), var(0)),var(2),S(app(var(1), app(lam(case(var(0), Z, var(0))), var(0)))))))), S(Z)), S(S(Z)))
+evaluated term: S(S(S(Z)))
+input term: app(app(lam(fix(lam(case(var(0), Z, app(app(lam(fix(lam(if(app(lam(case(var(0), T, F)), var(0)),var(2),S(app(var(1), app(lam(case(var(0), Z, var(0))), var(0)))))))), var(3)), app(var(2), var(0))))))), Z), Z)
+evaluated term: Z
+input term: app(app(lam(fix(lam(case(var(0), Z, app(app(lam(fix(lam(if(app(lam(case(var(0), T, F)), var(0)),var(2),S(app(var(1), app(lam(case(var(0), Z, var(0))), var(0)))))))), var(3)), app(var(2), var(0))))))), S(S(Z))), S(S(Z)))
+evaluated term: S(S(S(S(Z))))

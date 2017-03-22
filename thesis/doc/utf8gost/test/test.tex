@@ -1,0 +1,49 @@
+\documentclass[a4paper]{article}
+
+\usepackage[EU1]{fontenc}
+\newcommand{\UTFencname}{EU1}
+\newcommand{\cyrillicencoding}{EU1} 
+
+\usepackage{amsmath,amssymb}
+\usepackage[cm-default,no-math]{fontspec} 
+\usepackage{xltxtra} 
+
+%\newcommand{\cyr}{}
+%\input cyrunicode % всё же нужен :/ - для того чтобы ГОСТовский стиль работал, который использует сочетания \CYR
+\usepackage{polyglossia} 
+\setdefaultlanguage{russian}
+\setotherlanguage[variant=british,ordinalmonthday=false]{english} 
+\defaultfontfeatures{Mapping=tex-text} % нужен для того чтобы работали стандартные сочетания символов ---, --  << >> и т.п. 
+\setmainfont{OldStandard-Regular}
+
+
+\usepackage[square]{natbib}
+
+
+\newtheorem{thm}{Теорема}
+
+%\newfontfamily\russianfont[Mapping=tex-text]{OldStandard-Regular}
+%\lccode"2010="2010 % перенос слов с дефисами
+%\lccode "00AD="00AD \defaulthyphenchar="00AD
+
+\usepackage[pdftitle={Заголовок}, 
+        pdfauthor={Он},
+        pdfsubject={Непонятно},
+        pdfkeywords={то, се},
+        pdfa=true, 
+        colorlinks=true,
+        xetex]{hyperref}
+
+\makeatletter
+\renewcommand{\@biblabel}[1]{#1.}
+\makeatother		
+		
+\begin{document} 
+
+\nocite{*}
+
+\bibliographystyle{utf8gost780s}  %% стилевой файл для оформления по ГОСТу
+\bibliography{main}     %% имя библиографической базы (bib-файла)
+
+
+\end{document}
